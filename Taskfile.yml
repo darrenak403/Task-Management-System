@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  api-up:
+    desc: Start the API with its database and migration dependencies
+    cmds:
+      - docker compose -f docker-compose.dev.yml up --build --detach api
+
+  api-down:
+    desc: Stop the API development stack and keep its named database volume
+    cmds:
+      - docker compose -f docker-compose.dev.yml down
