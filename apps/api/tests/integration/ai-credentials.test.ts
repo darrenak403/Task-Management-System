@@ -96,7 +96,7 @@ const credentialPath = '/api/me/ai-provider-credentials/gemini';
 describe('account-scoped Gemini BYOK vault', () => {
   it('returns metadata only and stores an authenticated ciphertext', async () => {
     const cookie = await register('owner@example.com');
-    const originalKey = 'AIzaSyDUMMYcredentialKeyForTest-0123456789';
+    const originalKey = 'fake-gemini-key-DUMMYcredentialKeyForTest-0123456789';
     const before = await request(app).get(credentialPath).set('Cookie', cookie);
     const response = await request(app)
       .put(credentialPath)
@@ -134,7 +134,7 @@ describe('account-scoped Gemini BYOK vault', () => {
 
   it('changes the account model without replacing or exposing its Gemini key', async () => {
     const cookie = await register('model-owner@example.com');
-    const secretKey = 'AIzaSyAccountModelChangeCredential-1234567890';
+    const secretKey = 'fake-gemini-key-AccountModelChangeCredential-1234567890';
     const configured = await request(app)
       .put(credentialPath)
       .set('Origin', trustedOrigin)
@@ -167,7 +167,7 @@ describe('account-scoped Gemini BYOK vault', () => {
 
   it('treats selecting the current model as a no-op', async () => {
     const cookie = await register('same-model-owner@example.com');
-    const secretKey = 'AIzaSySameModelCredential-1234567890';
+    const secretKey = 'fake-gemini-key-SameModelCredential-1234567890';
     await request(app)
       .put(credentialPath)
       .set('Origin', trustedOrigin)
@@ -193,7 +193,7 @@ describe('account-scoped Gemini BYOK vault', () => {
 
   it('leaves the current key and model untouched when model verification fails', async () => {
     const cookie = await register('model-validation@example.com');
-    const secretKey = 'AIzaSyModelValidationCredential-1234567890';
+    const secretKey = 'fake-gemini-key-ModelValidationCredential-1234567890';
     await request(app)
       .put(credentialPath)
       .set('Origin', trustedOrigin)
@@ -227,8 +227,8 @@ describe('account-scoped Gemini BYOK vault', () => {
   it('does not allow one account to read, change, or replace another account credential', async () => {
     const ownerCookie = await register('owner@example.com');
     const otherCookie = await register('other@example.com');
-    const secretKey = 'AIzaSyFirstAccountCredential-0123456789';
-    const otherSecretKey = 'AIzaSyOtherAccountCredential-9876543210';
+    const secretKey = 'fake-gemini-key-FirstAccountCredential-0123456789';
+    const otherSecretKey = 'fake-gemini-key-OtherAccountCredential-9876543210';
     await request(app).put(credentialPath).set('Origin', trustedOrigin).set('Cookie', ownerCookie).send({ model: 'gemini-test-model', key: secretKey });
     const ownerBefore = await prisma.userGeminiCredential.findFirst({
       where: { user: { email: 'owner@example.com' } },
@@ -275,7 +275,7 @@ describe('account-scoped Gemini BYOK vault', () => {
   it('does not allow another account to delete the owner credential', async () => {
     const ownerCookie = await register('owner@example.com');
     const otherCookie = await register('other@example.com');
-    const secretKey = 'AIzaSyOwnerCredentialForDelete-0123456789';
+    const secretKey = 'fake-gemini-key-OwnerCredentialForDelete-0123456789';
     await request(app).put(credentialPath).set('Origin', trustedOrigin).set('Cookie', ownerCookie).send({ model: 'gemini-test-model', key: secretKey });
 
     const otherDelete = await request(app)
@@ -300,7 +300,7 @@ describe('account-scoped Gemini BYOK vault', () => {
     const write = await request(app)
       .put(credentialPath)
       .set('Origin', trustedOrigin)
-      .send({ model: 'gemini-test-model', key: 'AIzaSyUnauthenticatedCredential-0123456789' });
+      .send({ model: 'gemini-test-model', key: 'fake-gemini-key-UnauthenticatedCredential-0123456789' });
     const modelUpdate = await request(app)
       .patch(credentialPath)
       .set('Origin', trustedOrigin)
@@ -388,13 +388,13 @@ describe('account-scoped Gemini BYOK vault', () => {
         .put(credentialPath)
         .set('Origin', trustedOrigin)
         .set('Cookie', cookie)
-        .send({ model: 'gemini-test-model', key: `AIzaSyCredentialRateLimit-${String(index).padStart(2, '0')}-0123456789` })),
+        .send({ model: 'gemini-test-model', key: `fake-gemini-key-CredentialRateLimit-${String(index).padStart(2, '0')}-0123456789` })),
     );
     const limited = await request(app)
       .put(credentialPath)
       .set('Origin', trustedOrigin)
       .set('Cookie', cookie)
-      .send({ model: 'gemini-test-model', key: 'AIzaSyCredentialRateLimit-LIMIT-0123456789' });
+      .send({ model: 'gemini-test-model', key: 'fake-gemini-key-CredentialRateLimit-LIMIT-0123456789' });
 
     expect(writes.every((response) => response.status === 200)).toBe(true);
     expect(limited.status).toBe(429);
@@ -431,7 +431,7 @@ describe('account-scoped Gemini BYOK vault', () => {
       .put(credentialPath)
       .set('Origin', trustedOrigin)
       .set('Cookie', cookie)
-      .send({ model: 'gemini-test-model', key: 'AIzaSyCsrfDeleteCredential-0123456789' });
+      .send({ model: 'gemini-test-model', key: 'fake-gemini-key-CsrfDeleteCredential-0123456789' });
 
     const missingOrigin = await request(app).delete(credentialPath).set('Cookie', cookie).send({});
     const mismatchedOrigin = await request(app)
@@ -473,12 +473,12 @@ describe('account-scoped Gemini BYOK vault', () => {
       .put(credentialPath)
       .set('Origin', trustedOrigin)
       .set('Cookie', cookie)
-      .send({ model: 'gemini-test-model', key: 'AIzaSyFirstCredentialRevision-1234567890' });
+      .send({ model: 'gemini-test-model', key: 'fake-gemini-key-FirstCredentialRevision-1234567890' });
     const second = await request(app)
       .put(credentialPath)
       .set('Origin', trustedOrigin)
       .set('Cookie', cookie)
-      .send({ model: 'gemini-test-model', key: 'AIzaSySecondCredentialRevision-0987654321' });
+      .send({ model: 'gemini-test-model', key: 'fake-gemini-key-SecondCredentialRevision-0987654321' });
     const deleted = await request(app)
       .delete(credentialPath)
       .set('Origin', trustedOrigin)
@@ -499,7 +499,7 @@ describe('account-scoped Gemini BYOK vault', () => {
       .put(credentialPath)
       .set('Origin', trustedOrigin)
       .set('Cookie', cookie)
-      .send({ model: 'gemini-test-model', key: 'AIzaSyExistingCredentialRevision-0123456789' });
+      .send({ model: 'gemini-test-model', key: 'fake-gemini-key-ExistingCredentialRevision-0123456789' });
     const before = await prisma.userGeminiCredential.findFirst();
     const response = await request(app)
       .put(credentialPath)

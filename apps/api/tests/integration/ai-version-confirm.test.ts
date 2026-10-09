@@ -86,7 +86,7 @@ async function createScope(user: User): Promise<Scope> {
 
 async function storeCredential(userId: string): Promise<void> {
   const encrypted = encryptCredential({
-    plaintext: `AIzaSyVersionTest${userId.slice(0, 12)}Key-0123456789`,
+    plaintext: `fake-gemini-key-VersionTest${userId.slice(0, 12)}Key-0123456789`,
     userId,
     provider: 'GEMINI',
     keyVersion: plannerTestKeyring.activeVersion,

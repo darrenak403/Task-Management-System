@@ -115,7 +115,7 @@ describe('durable AI planner jobs', () => {
   it('reuses a concurrent idempotent request and rejects the same key with changed content', async () => {
     const user = await createUser('idempotency@example.com');
     const scope = await createScope(user);
-    await storeCredential(user.id, 'AIzaSyCreatorKeyForIdempotency-0123456789');
+    await storeCredential(user.id, 'fake-gemini-key-CreatorKeyForIdempotency-0123456789');
     const input = goalInput('request-idem-0001');
 
     const [first, concurrent] = await Promise.all([createJob(user, scope, input), createJob(user, scope, input)]);
@@ -157,8 +157,8 @@ describe('durable AI planner jobs', () => {
       .set('Cookie', owner.cookie)
       .send({ title: 'Selected launch checklist', description: 'Keep this context in the chosen team only.' });
     expect(sourceTask.status).toBe(201);
-    const ownerKey = 'AIzaSyOwnerSpecificPlannerCredential-0123456789';
-    const adminKey = 'AIzaSyAdminOtherPlannerCredential-9876543210';
+    const ownerKey = 'fake-gemini-key-OwnerSpecificPlannerCredential-0123456789';
+    const adminKey = 'fake-gemini-key-AdminOtherPlannerCredential-9876543210';
     const ownerRevision = await storeCredential(owner.id, ownerKey);
     await storeCredential(admin.id, adminKey);
     const taskCountBefore = await prisma.task.count();
@@ -243,7 +243,7 @@ describe('durable AI planner jobs', () => {
     fixture = createPlannerTestApp({ prisma, logger, environment, provider });
     const user = await createUser('clarification@example.com');
     const scope = await createScope(user);
-    await storeCredential(user.id, 'AIzaSyClarificationTestKey-0123456789');
+    await storeCredential(user.id, 'fake-gemini-key-ClarificationTestKey-0123456789');
     const created = await createJob(user, scope, goalInput('request-clarify-0001'));
     const { jobId } = created.body.data as { jobId: string };
 
@@ -295,7 +295,7 @@ describe('durable AI planner jobs', () => {
   it('cancels queued work and recovers an unknown provider outcome without replaying a stale lease', async () => {
     const user = await createUser('recovery@example.com');
     const scope = await createScope(user);
-    await storeCredential(user.id, 'AIzaSyRecoveryTestKey-0123456789');
+    await storeCredential(user.id, 'fake-gemini-key-RecoveryTestKey-0123456789');
     const queued = await createJob(user, scope, goalInput('request-cancel-0001'));
     const queuedJobId = queued.body.data.jobId as string;
     const cancelled = await request(fixture.app)
@@ -341,7 +341,7 @@ describe('durable AI planner jobs', () => {
   it('keeps a rotated or deleted creator credential from reaching the provider', async () => {
     const user = await createUser('credential-revoked@example.com');
     const scope = await createScope(user);
-    await storeCredential(user.id, 'AIzaSyCredentialBeforeQueue-0123456789');
+    await storeCredential(user.id, 'fake-gemini-key-CredentialBeforeQueue-0123456789');
     const created = await createJob(user, scope, goalInput('request-credential-0001'));
     const jobId = created.body.data.jobId as string;
     await fixture.credentialRepository.delete(user.id);
@@ -364,7 +364,7 @@ describe('durable AI planner jobs', () => {
     fixture = createPlannerTestApp({ prisma, logger, environment, provider });
     const user = await createUser('retry-limit@example.com');
     const scope = await createScope(user);
-    await storeCredential(user.id, 'AIzaSyRetryLimitTestKey-0123456789');
+    await storeCredential(user.id, 'fake-gemini-key-RetryLimitTestKey-0123456789');
     const created = await createJob(user, scope, goalInput('request-retry-root-0001'));
     const rootJobId = created.body.data.jobId as string;
 
@@ -405,7 +405,7 @@ describe('durable AI planner jobs', () => {
   it('settles the daily user quota once and rejects the eleventh operation', async () => {
     const user = await createUser('quota@example.com');
     const scope = await createScope(user);
-    await storeCredential(user.id, 'AIzaSyQuotaTestKey-0123456789');
+    await storeCredential(user.id, 'fake-gemini-key-QuotaTestKey-0123456789');
     const parsedInput = createPlanSchema.parse(goalInput('quota-operation-0000'));
 
     for (let index = 0; index < 10; index += 1) {
@@ -444,7 +444,7 @@ describe('durable AI planner jobs', () => {
     await prisma.teamMember.createMany({
       data: users.map(({ id }) => ({ workspaceId: scope.workspaceId, teamId: scope.teamId, userId: id })),
     });
-    await Promise.all(users.map(({ id }, index) => storeCredential(id, `AIzaSyWorkspaceQuota${String(index).padStart(2, '0')}Key-0123456789`)));
+    await Promise.all(users.map(({ id }, index) => storeCredential(id, `fake-gemini-key-WorkspaceQuota${String(index).padStart(2, '0')}Key-0123456789`)));
     const attempts = await Promise.allSettled(users.map(({ id }, index) => fixture.service.create(id, scope, createPlanSchema.parse(
       goalInput(`workspace-quota-${String(index).padStart(4, '0')}`),
     ))));

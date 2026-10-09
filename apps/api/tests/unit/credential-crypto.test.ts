@@ -4,7 +4,7 @@ import { decryptCredential, encryptCredential } from '../../src/shared/security/
 
 const key = randomBytes(32);
 const keyring = { 'key-v1': key };
-const plaintext = 'AIzaSyCredentialMaterialForCryptoTest-1234567890';
+const plaintext = 'fake-gemini-key-CredentialMaterialForCryptoTest-1234567890';
 
 function encrypt() {
   return encryptCredential({

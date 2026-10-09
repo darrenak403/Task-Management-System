@@ -4,7 +4,7 @@ import type { AiProviderError } from '../../src/modules/planner/provider.types.j
 import { parseEnvironment } from '../../src/shared/config/env.js';
 import { successfulPlan } from '../fakes/fake-gemini.js';
 
-const apiKey = 'AIzaSyUnitTestKeyMustStayInHeaderOnly-0123456789';
+const apiKey = 'fake-gemini-key-UnitTestKeyMustStayInHeaderOnly-0123456789';
 const environment = parseEnvironment({
   NODE_ENV: 'test',
   AI_ENABLED: 'true',
