@@ -8,7 +8,8 @@
   },
   "packageManager": "npm@11.14.1",
   "workspaces": [
-    "apps/api"
+    "apps/api",
+    "apps/web"
   ],
   "overrides": {
     "deepmerge-ts": "8.0.2",
@@ -16,10 +17,11 @@
   },
   "scripts": {
     "dev": "npm --workspace @task-management/api run dev",
-    "build": "npm --workspace @task-management/api run build",
-    "lint": "eslint apps/api/src apps/api/tests",
-    "typecheck": "npm --workspace @task-management/api run typecheck",
-    "test": "npm --workspace @task-management/api run test",
+    "dev:web": "npm --workspace @task-management/web run dev",
+    "build": "npm --workspace @task-management/api run build && npm --workspace @task-management/web run build",
+    "lint": "eslint apps/api/src apps/api/tests apps/web/src",
+    "typecheck": "npm --workspace @task-management/api run typecheck && npm --workspace @task-management/web run typecheck",
+    "test": "npm --workspace @task-management/api run test && npm --workspace @task-management/web run test",
     "docker:dev:up": "docker compose -f docker-compose.dev.yml up --build -d",
     "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
     "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs --follow",
@@ -27,9 +29,11 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.3.8",
     "@types/node": "24.10.0",
     "@types/supertest": "7.2.1",
     "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.13.0",
     "supertest": "7.1.4",
     "typescript": "5.9.3",
