@@ -16,8 +16,7 @@ tasks:
   seed:
     desc: Create or refresh the demo users, workspaces and tasks (needs SEED_DEMO_DATA and SEED_DEMO_PASSWORD)
     cmds:
-      # The migration image carries no API sources, and the seed script imports them, so they are mounted read-only.
-      - '{{.COMPOSE}} run --build --rm -v ./apps/api/src:/workspace/apps/api/src:ro -v ./apps/api/tsconfig.json:/workspace/apps/api/tsconfig.json:ro -v ./tsconfig.base.json:/workspace/tsconfig.base.json:ro migrate npm run --workspace @task-management/api db:seed'
+      - '{{.COMPOSE}} run --build --rm migrate npm run --workspace @task-management/api db:seed'
 
   reset:
     desc: Delete every record in the local database, then recreate it with the seed data
