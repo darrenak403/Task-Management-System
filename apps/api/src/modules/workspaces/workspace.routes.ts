@@ -13,6 +13,7 @@ export function createWorkspaceRoutes(authService: AuthService, service: Workspa
   router.post('/', controller.create);
   router.get('/:workspaceId/members', controller.listMembers);
   router.post('/:workspaceId/members', controller.addMember);
+  router.get('/:workspaceId/member-candidates', controller.listMemberCandidates);
   router.patch('/:workspaceId/members/:userId', controller.updateMember);
   router.delete('/:workspaceId/members/:userId', controller.removeMember);
   router.get('/:workspaceId', controller.get);

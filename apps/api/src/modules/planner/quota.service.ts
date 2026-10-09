@@ -33,6 +33,16 @@ export function businessUsageDate(now = new Date()): Date {
   return new Date(`${value('year')}-${value('month')}-${value('day')}T00:00:00.000Z`);
 }
 
+/** What the signed-in user has used of their own daily allowance, for display. The workspace and global limits still apply on top. */
+export async function dailyUsage(client: Pick<Prisma.TransactionClient, '$queryRaw'>, userId: string): Promise<{ used: number; limit: number; attemptsPerRequest: number }> {
+  const rows = await client.$queryRaw<Array<{ used: number }>>`
+    SELECT operations_reserved + operations_used AS used
+    FROM ai_usage_daily
+    WHERE scope_type = 'USER'::ai_usage_scope_type AND scope_id = ${userId}::uuid AND usage_date = ${businessUsageDate()}::date
+  `;
+  return { used: Number(rows[0]?.used ?? 0), limit: limits.USER, attemptsPerRequest: MAX_PROVIDER_ATTEMPTS };
+}
+
 export async function reserveQuota(
   tx: Prisma.TransactionClient,
   input: { scopes: QuotaScope[]; usageDate: Date; maxInputTokens: number; maxOutputTokens: number; maxAttempts?: number },

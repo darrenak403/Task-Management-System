@@ -52,6 +52,15 @@ export class GeminiCredentialRepository {
     return updated.count === 1;
   }
 
+  /** Records a successful connection test without changing the credential itself. */
+  async markVerified(userId: string, expectedRevision: string, verifiedAt: Date): Promise<boolean> {
+    const updated = await this.prisma.userGeminiCredential.updateMany({
+      where: { userId, credentialRevision: expectedRevision },
+      data: { verifiedAt },
+    });
+    return updated.count === 1;
+  }
+
   async delete(userId: string): Promise<void> {
     await this.prisma.userGeminiCredential.deleteMany({ where: { userId } });
   }

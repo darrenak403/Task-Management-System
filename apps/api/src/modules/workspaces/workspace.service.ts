@@ -16,6 +16,8 @@ function workspaceDto(workspace: { id: string; name: string; createdAt: Date; up
   return { id: workspace.id, name: workspace.name, role, createdAt: workspace.createdAt.toISOString(), updatedAt: workspace.updatedAt.toISOString() };
 }
 
+const MEMBER_CANDIDATE_LIMIT = 20;
+
 export class WorkspaceService {
   private readonly repository: WorkspaceRepository;
 
@@ -78,6 +80,14 @@ export class WorkspaceService {
         meta: pageMeta(pagination, total),
       };
     }, { isolationLevel: 'RepeatableRead' });
+  }
+
+  /** People an owner or admin can add: a short list, so the picker shows matches rather than the whole user base. */
+  async listMemberCandidates(userId: string, workspaceId: string, search: string | undefined) {
+    return runTransactionWithRetry(this.prisma, async (tx) => {
+      await requireWorkspaceRole(tx, workspaceId, userId, WORKSPACE_ADMIN_ROLES);
+      return { data: await this.repository.listMemberCandidates(tx, workspaceId, search || undefined, MEMBER_CANDIDATE_LIMIT) };
+    });
   }
 
   async addMember(userId: string, workspaceId: string, input: AddWorkspaceMemberInput) {

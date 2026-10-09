@@ -1,3 +1,4 @@
+import { dailyUsage } from './quota.service.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { Prisma, type PrismaClient, type AiPlan, type AiPlanVersion } from '../../generated/prisma/client.js';
 import { resourceNotFound } from '../../shared/authorization/policy.js';
@@ -256,6 +257,7 @@ export class AiPlanVersionService {
       available,
       model: credential?.model ?? null,
       credentialRequired,
+      dailyUsage: await dailyUsage(this.prisma, userId),
       unavailableReason: quarantined ? 'restore_quarantine'
         : !this.environment.AI_ENABLED ? this.environment.aiUnavailableReason
           : credentialRequired ? 'credential_required' : modelRequired ? 'model_required' : this.environment.aiUnavailableReason,

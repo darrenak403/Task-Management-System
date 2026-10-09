@@ -20,7 +20,7 @@ To create the isolated demo workspaces and date-boundary tasks, set `SEED_DEMO_D
 npm run docker:dev:seed
 ```
 
-The seed is idempotent and never runs during migration or deployment. It creates `owner.alpha@example.test`, `member.alpha@example.test`, and `owner.beta@example.test` with the supplied demo password. Use it only in a disposable development database.
+The seed is idempotent and never runs during migration or deployment. It creates two accounts, each owning a workspace of their own, with Vietnamese content: `anh@gmail.com` owns `AIM Studio` (teams Backend and Frontend) and `khanh@gmail.com` owns `Quán Cà Phê Sáng` (team Vận hành), 44 tasks in total with checklists and dependencies. Neither account can see the other's workspace until invited. Both use the supplied password. The content lives in `prisma/seed-data.ts`. Use it only in a disposable development database.
 
 ## Verification
 
