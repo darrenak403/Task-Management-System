@@ -13,6 +13,13 @@ FROM dependencies AS migrate
 ENV NODE_ENV=production
 COPY --chown=node:node apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 COPY --chown=node:node apps/api/prisma ./apps/api/prisma
+# The demo seed runs from this image too. It needs the Prisma client and the two source files it imports.
+ARG DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
+COPY tsconfig.base.json ./
+COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
+COPY apps/api/src/shared/db/prisma.ts ./apps/api/src/shared/db/prisma.ts
+COPY apps/api/src/shared/config/env.ts ./apps/api/src/shared/config/env.ts
+RUN DATABASE_URL=${DATABASE_URL} npm run --workspace @task-management/api db:generate
 USER node
 CMD ["npm", "run", "--workspace", "@task-management/api", "db:migrate:deploy"]
 

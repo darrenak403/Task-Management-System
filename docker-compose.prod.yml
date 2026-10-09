@@ -26,6 +26,21 @@ services:
     restart: "no"
     networks: [backend]
 
+  # Demo records are opt-in: this step does nothing unless SEED_DEMO_DATA=yes. A rerun restores the demo users and tasks.
+  seed:
+    image: ${BACKEND_MIGRATE_IMAGE_REF:?Set the Docker Hub migration image, e.g. <user>/task-management-api-migrate:latest}
+    pull_policy: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set the private database URL in Dokploy}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-no}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+    command: ["sh", "-c", "[ \"$$SEED_DEMO_DATA\" = yes ] || exit 0; exec npm run --workspace @task-management/api db:seed"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+    networks: [backend]
+
   api:
     image: ${BACKEND_API_IMAGE_REF:?Set the Docker Hub API image, e.g. <user>/task-management-api:latest}
     pull_policy: always
