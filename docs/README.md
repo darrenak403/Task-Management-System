@@ -9,7 +9,7 @@ Requirements và architecture là nguồn chuẩn cho phạm vi sản phẩm và
 | Giai đoạn | Tài liệu | Vai trò |
 | --- | --- | --- |
 | Đề bài nguồn | [README ở repo root](../README.md) | Nội dung pre-test do công ty cung cấp; giữ nguyên làm đầu vào. |
-| Báo cáo bài làm | [SRS và báo cáo bài làm](SRS.md) | Đọc đầu tiên: cách thử nhanh, đối chiếu từng yêu cầu của đề bài, quy tắc nghiệp vụ, cách chạy local, phần chưa hoàn thành. |
+| Báo cáo bài làm | [SRS và báo cáo bài làm](../SRS.md) | Đọc đầu tiên: cách thử nhanh, đối chiếu từng yêu cầu của đề bài, quy tắc nghiệp vụ, cách chạy local, phần chưa hoàn thành. |
 | 01 — Requirements tổng thể | [Task Management System PRD](01-requirements/task-management-system-prd.md) | Nguồn yêu cầu tổng thể: mục tiêu, người dùng, core/bonus/AI/realtime, ranh giới và acceptance IDs. |
 | 01 — Requirements phân hệ AI | [AI Smart Task Planner PRD](01-requirements/ai-smart-task-planner-prd.md) | Bản sao nguyên văn product/UX spec được cung cấp; nguồn yêu cầu và acceptance criteria của AI. |
 | 02 — Architecture | [System Architecture](02-architecture/system-architecture.md) | Tài liệu kiến trúc chính: quyết định FE/BE, dữ liệu, API, bảo mật và DevOps để đáp ứng PRD. |
