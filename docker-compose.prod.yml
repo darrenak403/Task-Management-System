@@ -1,0 +1,76 @@
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set in Dokploy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set in Dokploy}
+      POSTGRES_DB: ${POSTGRES_DB:?Set in Dokploy}
+    volumes:
+      - backend-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+    networks: [backend]
+
+  migrate:
+    image: ${BACKEND_MIGRATE_IMAGE_REF:?Set the Docker Hub migration image, e.g. <user>/task-management-api-migrate:latest}
+    pull_policy: always
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set the private database URL in Dokploy}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    networks: [backend]
+
+  api:
+    image: ${BACKEND_API_IMAGE_REF:?Set the Docker Hub API image, e.g. <user>/task-management-api:latest}
+    pull_policy: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      APP_ORIGIN: ${APP_ORIGIN:?Set the public Next.js origin}
+      DATABASE_URL: ${DATABASE_URL:?Set the private database URL in Dokploy}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:?Set the exact IP or CIDR of the proxy peer, 172.31.240.1 for the host tunnel}
+      AI_ENABLED: ${AI_ENABLED:-true}
+      CREDENTIAL_ENCRYPTION_ACTIVE_KEY_VERSION: ${CREDENTIAL_ENCRYPTION_ACTIVE_KEY_VERSION:?Set the active key version}
+      CREDENTIAL_ENCRYPTION_KEYRING: ${CREDENTIAL_ENCRYPTION_KEYRING:?Set the versioned keyring as an API-only runtime secret}
+      AI_MAX_INPUT_TOKENS: ${AI_MAX_INPUT_TOKENS:?Set an application input token ceiling}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:?Set an application output token ceiling}
+      AI_PROVIDER_TIMEOUT_MS: ${AI_PROVIDER_TIMEOUT_MS:-60000}
+      AI_JOB_TIMEOUT_MS: ${AI_JOB_TIMEOUT_MS:-180000}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Loopback only: the host's Cloudflare Tunnel is the single public entry point.
+    ports: ["127.0.0.1:${API_HOST_PORT:-4100}:4000"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 4s
+      retries: 8
+      start_period: 15s
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [backend, edge]
+
+volumes:
+  backend-postgres-data:
+
+networks:
+  backend:
+    internal: true
+  edge:
+    # Fixed subnet so the tunnel's requests always reach Express from the gateway named in TRUSTED_PROXY_CIDRS.
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.31.240.0/29}
