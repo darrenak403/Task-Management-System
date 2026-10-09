@@ -1,0 +1,93 @@
+name: Web Release
+
+on:
+  workflow_run:
+    workflows: [Web CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+    env:
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Validate release configuration
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -n "$DOCKERHUB_USERNAME"
+          test -n "$DOCKERHUB_PASSWORD"
+          [[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          current_main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq '.sha')"
+          if [[ "$current_main_sha" != "$RELEASE_SHA" ]]; then
+            echo "Refusing to publish stale release ${RELEASE_SHA}; current main is ${current_main_sha}." >&2
+            exit 1
+          fi
+
+      - name: Login to Docker Hub
+        shell: bash
+        run: printf '%s' "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+      - name: Build and push web image
+        id: web-image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx inspect --bootstrap
+          image="docker.io/${DOCKERHUB_USERNAME}/task-management-web"
+          tag="sha-${RELEASE_SHA}"
+          docker buildx build --platform linux/amd64 \
+            --file apps/web/Dockerfile \
+            --target web \
+            --build-arg "APP_BUILD_SHA=${RELEASE_SHA}" \
+            --tag "${image}:${tag}" \
+            --tag "${image}:latest" \
+            --metadata-file /tmp/web-image-metadata.json \
+            --push .
+          digest="$(jq -er '.["containerimage.digest"]' /tmp/web-image-metadata.json)"
+          [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          echo "image_ref=${image}@${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Record published image reference
+        shell: bash
+        env:
+          WEB_IMAGE_REF: ${{ steps.web-image.outputs.image_ref }}
+        run: |
+          {
+            echo '## Web release'
+            echo
+            echo "- Commit: \`${RELEASE_SHA}\`"
+            echo "- Web: \`${WEB_IMAGE_REF}\`"
+            echo "- The image is also tagged \`sha-${RELEASE_SHA}\` and \`latest\`."
+            echo
+            echo 'The image is published only. Deploy from the Dokploy dashboard.'
+          } >> "$GITHUB_STEP_SUMMARY"

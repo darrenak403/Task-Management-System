@@ -33,7 +33,7 @@ describe('OpenAPI contract', () => {
     const operationIds = operations.map((operation) => operation.operationId);
     expect(operationIds.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
     expect(new Set(operationIds).size).toBe(operations.length);
-    expect(operations.length).toBe(49);
+    expect(operations.length).toBe(51);
 
     for (const operation of operations) {
       for (const [status, response] of Object.entries(operation.responses ?? {})) {

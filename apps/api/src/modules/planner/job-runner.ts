@@ -268,6 +268,8 @@ export class AiJobRunner {
       const providerError = error instanceof AiProviderError ? error :
         timedSignal.aborted ? new AiProviderError('AI_TIMEOUT') : new AiProviderError('AI_PROVIDER_UNAVAILABLE');
       const unknown = ['AI_TIMEOUT', 'AI_CANCELLED', 'AI_CREDENTIAL_CHANGED', 'AI_PROVIDER_UNAVAILABLE'].includes(providerError.code);
+      // The user only sees a general message; the status and model here tell an operator what the provider objected to.
+      this.logger.warn({ jobId: job.id, code: providerError.code, providerStatus: providerError.providerStatus, providerMessage: providerError.providerMessage, model: job.model }, 'AI provider call failed');
       await this.repository.finishProviderFailure(job.id, leaseToken, { code: providerError.code, unknown }).catch(ignoreLeaseLoss);
       return null;
     }

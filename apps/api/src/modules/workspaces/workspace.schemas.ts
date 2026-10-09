@@ -8,6 +8,7 @@ export const workspaceMemberParamsSchema = z.object({ workspaceId: z.uuid(), use
 export const createWorkspaceSchema = z.object({ name: workspaceName }).strict();
 export const updateWorkspaceSchema = createWorkspaceSchema;
 export const workspaceMemberListQuerySchema = paginationSchema;
+export const memberCandidateQuerySchema = z.object({ search: z.string().trim().max(100).optional() }).strict();
 export const addWorkspaceMemberSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) }).strict();
 export const updateWorkspaceMemberSchema = z.object({ role: z.enum(['ADMIN', 'MEMBER']) }).strict();
 

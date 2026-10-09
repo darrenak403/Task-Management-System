@@ -54,22 +54,24 @@ describe('restore isolation and demo seed scripts', () => {
       prisma.workspaceMember.count(),
     ]);
     const alphaTasks = await prisma.task.findMany({ where: { workspaceId: '20000000-0000-4000-8000-000000000001' } });
-    const overdue = alphaTasks.find(({ title }) => title === 'Resolve overdue production alert');
-    const dueToday = alphaTasks.find(({ title }) => title === 'Review today’s release checklist');
-    const upcoming = alphaTasks.find(({ title }) => title === 'Prepare the next sprint board');
-    const demoOwner = users.find(({ email }) => email === 'owner.alpha@example.test');
+    const overdue = alphaTasks.find(({ title }) => title === 'Tích hợp cổng thanh toán VNPay (sandbox)');
+    const dueToday = alphaTasks.find(({ title }) => title === 'Xử lý webhook xác nhận thanh toán');
+    const upcoming = alphaTasks.find(({ title }) => title === 'API tạo đơn hàng và trừ tồn kho trong một transaction');
+    const demoOwner = users.find(({ email }) => email === 'anh@gmail.com');
     const runtimeControl = await prisma.aiRuntimeControl.findUniqueOrThrow({ where: { id: 1 } });
 
     expect(users.map(({ email }) => email)).toEqual([
-      'member.alpha@example.test', 'owner.alpha@example.test', 'owner.beta@example.test',
+      'anh@gmail.com', 'khanh@gmail.com',
     ]);
-    expect(workspaces.map(({ name }) => name)).toEqual(['Demo Workspace Alpha', 'Demo Workspace Beta']);
-    expect(teams).toHaveLength(2);
-    expect(tasks).toHaveLength(6);
-    expect(memberships).toBe(3);
+    expect(workspaces.map(({ name }) => name)).toEqual(['AIM Studio', 'Quán Cà Phê Sáng']);
+    expect(teams).toHaveLength(3);
+    expect(tasks).toHaveLength(44);
+    expect(memberships).toBe(2);
     expect(overdue?.dueDate && dueToday?.dueDate && upcoming?.dueDate).toBeTruthy();
     expect(overdue!.dueDate!.getTime()).toBe(dueToday!.dueDate!.getTime() - 86_400_000);
     expect(upcoming!.dueDate!.getTime()).toBe(dueToday!.dueDate!.getTime() + 86_400_000);
+    expect(await prisma.taskChecklist.count()).toBe(30);
+    expect(await prisma.taskDependency.count()).toBe(24);
     expect(runtimeControl.quarantined).toBe(false);
     expect(demoOwner?.passwordHash).toBeTruthy();
     expect(demoOwner?.passwordHash).not.toBe(testPassword);

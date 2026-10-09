@@ -1,0 +1,36 @@
+export const teams = {
+  dialog: {
+    renameTitle: 'Rename team',
+    renameDescription: 'The new name is shown to everyone who can see this team.',
+    createDescription: 'Teams hold tasks. You join the new team right away and can add other people from its menu in the sidebar.',
+    renamed: 'Team renamed',
+    created: 'Team created',
+  },
+  gate: {
+    unavailableTitle: 'This team is not available',
+    unavailableMessage: 'It may have been removed, or you are no longer a member of it.',
+    back: 'Back to dashboard',
+    loading: 'Loading team',
+  },
+  members: {
+    titleFor: (team: string) => `${team} members`,
+    title: 'Team members',
+    description: 'Only people in this team can be assigned its tasks.',
+    added: (person: string, team: string) => `${person} added to ${team}`,
+    alreadyIn: 'This person is already in the team.',
+    removed: (person: string, team: string) => `${person} removed from ${team}`,
+    addLabel: 'Workspace member to add',
+    loadingPeople: 'Loading people…',
+    everyoneIn: 'Everyone is already in this team',
+    select: 'Select a workspace member',
+    loadMorePeople: 'Load more workspace members',
+    empty: 'No one is in this team yet. Add a workspace member above.',
+    removeFrom: (person: string) => `Remove ${person} from the team`,
+  },
+  table: {
+    empty: 'No teams yet. Create a team to start adding tasks.',
+    team: 'Team',
+    of: (team: string) => `of ${team}`,
+    newTeam: 'New team',
+  },
+};

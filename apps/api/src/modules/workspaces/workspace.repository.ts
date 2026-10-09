@@ -52,6 +52,19 @@ export class WorkspaceRepository {
     ]);
   }
 
+  /** Accounts that are not in the workspace yet, optionally narrowed by a part of their email or name. */
+  listMemberCandidates(client: QueryClient, workspaceId: string, search: string | undefined, take: number) {
+    return client.user.findMany({
+      where: {
+        workspaceMemberships: { none: { workspaceId } },
+        ...(search ? { OR: [{ email: { contains: search, mode: 'insensitive' } }, { displayName: { contains: search, mode: 'insensitive' } }] } : {}),
+      },
+      orderBy: [{ email: 'asc' }],
+      take,
+      select: { id: true, email: true, displayName: true },
+    });
+  }
+
   findUserByEmail(client: QueryClient, email: string) {
     return client.user.findUnique({ where: { email }, select: { id: true } });
   }

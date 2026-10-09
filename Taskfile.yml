@@ -1,12 +1,37 @@
 version: '3'
 
-tasks:
-  api-up:
-    desc: Start the API with its database and migration dependencies
-    cmds:
-      - docker compose -f docker-compose.dev.yml up --build --detach api
+# Values come from `.env` (copy `.env.example`); `.env.local` overrides it when present.
+dotenv: ['.env.local', '.env']
 
-  api-down:
-    desc: Stop the API development stack and keep its named database volume
+vars:
+  COMPOSE: docker compose -f docker-compose.dev.yml
+
+tasks:
+  dev:
+    desc: Run the app locally - database and API in Docker, web with hot reload on http://localhost:3000
     cmds:
-      - docker compose -f docker-compose.dev.yml down
+      - '{{.COMPOSE}} up --build --detach api'
+      - npm --workspace @task-management/web run dev -- --port ${WEB_PORT:-3000}
+
+  seed:
+    desc: Create or refresh the demo users, workspaces and tasks (needs SEED_DEMO_DATA and SEED_DEMO_PASSWORD)
+    cmds:
+      # The migration image carries no API sources, and the seed script imports them, so they are mounted read-only.
+      - '{{.COMPOSE}} run --build --rm -v ./apps/api/src:/workspace/apps/api/src:ro -v ./apps/api/tsconfig.json:/workspace/apps/api/tsconfig.json:ro -v ./tsconfig.base.json:/workspace/tsconfig.base.json:ro migrate npm run --workspace @task-management/api db:seed'
+
+  reset:
+    desc: Delete every record in the local database, then recreate it with the seed data
+    cmds:
+      - '{{.COMPOSE}} down --volumes'
+      - '{{.COMPOSE}} up --build --detach api'
+      - task: seed
+
+  down:
+    desc: Stop the database and API (data is kept)
+    cmds:
+      - '{{.COMPOSE}} down'
+
+  logs:
+    desc: Follow the API and database logs
+    cmds:
+      - '{{.COMPOSE}} logs --follow'
