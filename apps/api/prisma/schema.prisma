@@ -1,0 +1,454 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                   String                @id @default(uuid()) @db.Uuid
+  email                String                @unique(map: "users_email_key") @db.VarChar(254)
+  passwordHash         String                @map("password_hash") @db.Text
+  displayName          String?               @map("display_name") @db.VarChar(80)
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sessions             Session[]
+  geminiCredential     UserGeminiCredential?
+  workspaceMemberships WorkspaceMember[]
+  createdTasks         Task[]                @relation("TaskCreator")
+  createdAiPlans       AiPlan[]
+  createdAiJobs        AiJob[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique(map: "sessions_token_hash_key") @map("token_hash") @db.Char(64)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "sessions_user_id_fkey")
+
+  @@index([userId], map: "sessions_user_id_idx")
+  @@index([expiresAt], map: "sessions_expires_at_idx")
+  @@map("sessions")
+}
+
+model UserGeminiCredential {
+  userId               String    @id @map("user_id") @db.Uuid
+  provider             String    @default("GEMINI") @db.VarChar(16)
+  ciphertext           Bytes     @db.ByteA
+  nonce                Bytes     @db.ByteA
+  authenticationTag    Bytes     @map("authentication_tag") @db.ByteA
+  encryptionKeyVersion String    @map("encryption_key_version") @db.VarChar(64)
+  credentialRevision   String    @unique(map: "user_gemini_credentials_revision_key") @default(uuid()) @map("credential_revision") @db.Uuid
+  model                String?   @db.VarChar(128)
+  verifiedAt           DateTime? @map("verified_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "user_gemini_credentials_user_id_fkey")
+
+  @@map("user_gemini_credentials")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+
+  @@map("workspace_role")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+
+  @@map("task_status")
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("task_priority")
+}
+
+enum AiPlanStatus {
+  DRAFT
+  IMPORTED
+  EXPIRED
+
+  @@map("ai_plan_status")
+}
+
+enum AiPlanVersionSource {
+  GENERATED
+  EDITED
+  REGENERATED
+  ADJUSTED
+
+  @@map("ai_plan_version_source")
+}
+
+enum AiJobStatus {
+  QUEUED
+  RUNNING
+  NEEDS_CLARIFICATION
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  INTERRUPTED
+
+  @@map("ai_job_status")
+}
+
+enum AiJobAction {
+  GENERATE
+  CLARIFY
+  RETRY
+
+  @@map("ai_job_action")
+}
+
+enum AiUsageScopeType {
+  USER
+  WORKSPACE
+  GLOBAL
+
+  @@map("ai_usage_scope_type")
+}
+
+model Workspace {
+  id        String            @id @default(uuid()) @db.Uuid
+  name      String            @db.VarChar(100)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  members   WorkspaceMember[]
+  teams     Team[]
+  aiPlans   AiPlan[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  workspaceId     String        @map("workspace_id") @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  role            WorkspaceRole @default(MEMBER)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Restrict, map: "workspace_members_workspace_id_fkey")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict, map: "workspace_members_user_id_fkey")
+  teamMemberships TeamMember[]
+
+  @@id([workspaceId, userId], map: "workspace_members_pkey")
+  @@index([userId, workspaceId], map: "workspace_members_user_id_workspace_id_idx")
+  @@map("workspace_members")
+}
+
+model Team {
+  id          String       @id @default(uuid()) @db.Uuid
+  workspaceId String       @map("workspace_id") @db.Uuid
+  name        String       @db.VarChar(100)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Restrict, map: "teams_workspace_id_fkey")
+  members     TeamMember[]
+  tasks       Task[]
+  aiPlans     AiPlan[]
+  aiJobs      AiJob[]      @relation("AiJobTeam")
+
+  @@unique([workspaceId, id], map: "teams_workspace_id_id_key")
+  @@index([workspaceId, createdAt, id], map: "teams_workspace_created_at_id_idx")
+  @@map("teams")
+}
+
+model TeamMember {
+  workspaceId     String          @map("workspace_id") @db.Uuid
+  teamId          String          @map("team_id") @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  team            Team            @relation(fields: [workspaceId, teamId], references: [workspaceId, id], onDelete: Restrict, map: "team_members_workspace_team_fkey")
+  workspaceMember WorkspaceMember @relation(fields: [workspaceId, userId], references: [workspaceId, userId], onDelete: Restrict, map: "team_members_workspace_user_fkey")
+  assignedTasks   Task[]          @relation("TaskAssignee")
+
+  @@id([teamId, userId], map: "team_members_pkey")
+  @@index([workspaceId, userId, teamId], map: "team_members_workspace_user_team_idx")
+  @@map("team_members")
+}
+
+model Task {
+  id                 String           @id @default(uuid()) @db.Uuid
+  workspaceId        String           @map("workspace_id") @db.Uuid
+  teamId             String           @map("team_id") @db.Uuid
+  createdBy          String           @map("created_by") @db.Uuid
+  assigneeId         String?          @map("assignee_id") @db.Uuid
+  title              String           @db.VarChar(200)
+  description        String           @default("") @db.Text
+  status             TaskStatus       @default(TODO)
+  priority           TaskPriority     @default(MEDIUM)
+  dueDate            DateTime?        @map("due_date") @db.Date
+  completionCriteria String           @default("") @map("completion_criteria") @db.VarChar(2000)
+  priorityReason     String           @default("") @map("priority_reason") @db.VarChar(1000)
+  estimateMinMinutes Int?             @map("estimate_min_minutes")
+  estimateMaxMinutes Int?             @map("estimate_max_minutes")
+  plannedStartDate   DateTime?        @map("planned_start_date") @db.Date
+  relativeStartDay   Int?             @map("relative_start_day")
+  relativeDueDay     Int?             @map("relative_due_day")
+  sourcePlanId       String?          @map("source_plan_id") @db.Uuid
+  sourceItemId       String?          @map("source_item_id") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  team               Team             @relation(fields: [workspaceId, teamId], references: [workspaceId, id], onDelete: Restrict, map: "tasks_workspace_team_fkey")
+  creator            User             @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: Restrict, map: "tasks_created_by_fkey")
+  assignee           TeamMember?      @relation("TaskAssignee", fields: [teamId, assigneeId], references: [teamId, userId], onDelete: Restrict, map: "tasks_team_assignee_fkey")
+  sourcePlan         AiPlan?          @relation(fields: [sourcePlanId], references: [id], onDelete: Restrict, map: "tasks_source_plan_fkey")
+  checklist          TaskChecklist[]
+  prerequisites      TaskDependency[] @relation("TaskDependencies")
+  dependents         TaskDependency[] @relation("TaskDependents")
+
+  @@unique([workspaceId, teamId, id], map: "tasks_workspace_team_id_key")
+  @@index([workspaceId, teamId, createdAt(sort: Desc), id(sort: Desc)], map: "tasks_workspace_team_created_at_id_idx")
+  @@index([workspaceId, teamId, status, createdAt(sort: Desc), id(sort: Desc)], map: "tasks_workspace_team_status_created_at_id_idx")
+  @@index([workspaceId, dueDate], map: "tasks_workspace_due_date_idx")
+  @@index([teamId, assigneeId], map: "tasks_team_assignee_idx")
+  @@index([sourcePlanId, sourceItemId], map: "tasks_source_plan_item_idx")
+  @@map("tasks")
+}
+
+model RealtimeClock {
+  id                Int    @id @default(1)
+  epoch             String @db.Uuid
+  lastSeq           BigInt @map("last_seq") @db.BigInt
+  watermarkId       String @map("watermark_id") @db.Uuid
+  epochCheckpointId String @map("epoch_checkpoint_id") @db.Uuid
+  purgedThrough     BigInt @map("purged_through") @db.BigInt
+
+  @@map("realtime_clock")
+}
+
+model RealtimeEvent {
+  id                String   @id @db.Uuid
+  epoch             String   @db.Uuid
+  seq               BigInt   @db.BigInt
+  eventType         String   @map("event_type") @db.VarChar(64)
+  schemaVersion     Int      @map("schema_version") @db.SmallInt
+  workspaceId       String?  @map("workspace_id") @db.Uuid
+  teamId            String?  @map("team_id") @db.Uuid
+  targetUserId      String?  @map("target_user_id") @db.Uuid
+  targetSessionHash String?  @map("target_session_hash") @db.Char(64)
+  resourceId        String?  @map("resource_id") @db.Uuid
+  payload           Json     @db.JsonB
+  recordedAt        DateTime @default(now()) @map("recorded_at") @db.Timestamptz(6)
+
+  @@unique([epoch, seq], map: "realtime_events_epoch_seq_key")
+  @@index([workspaceId, teamId, epoch, seq], map: "realtime_events_scope_idx")
+  @@index([targetUserId, epoch, seq], map: "realtime_events_target_user_idx")
+  @@index([targetSessionHash, epoch, seq], map: "realtime_events_target_session_idx")
+  @@index([recordedAt, seq], map: "realtime_events_retention_idx")
+  @@map("realtime_events")
+}
+
+model AiPlan {
+  id              String           @id @default(uuid()) @db.Uuid
+  workspaceId     String           @map("workspace_id") @db.Uuid
+  teamId          String           @map("team_id") @db.Uuid
+  creatorId       String           @map("creator_id") @db.Uuid
+  status          AiPlanStatus     @default(DRAFT)
+  activeVersionId String?          @map("active_version_id") @db.Uuid
+  importedAt      DateTime?        @map("imported_at") @db.Timestamptz(6)
+  purgedAt        DateTime?        @map("purged_at") @db.Timestamptz(6)
+  cloneRequestKey String?          @map("clone_request_key") @db.VarChar(128)
+  cloneRequestHash String?         @map("clone_request_hash") @db.Char(64)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expiresAt       DateTime         @map("expires_at") @db.Timestamptz(6)
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict, map: "ai_plans_workspace_id_fkey")
+  team            Team             @relation(fields: [workspaceId, teamId], references: [workspaceId, id], onDelete: Restrict, map: "ai_plans_workspace_team_fkey")
+  creator         User             @relation(fields: [creatorId], references: [id], onDelete: Restrict, map: "ai_plans_creator_id_fkey")
+  versions        AiPlanVersion[]
+  jobs            AiJob[]
+  importReceipt   AiImportReceipt?
+  importedTasks   Task[]
+  activeVersion   AiPlanVersion?   @relation("AiPlanActiveVersion", fields: [id, activeVersionId], references: [planId, id], onDelete: Restrict, map: "ai_plans_active_version_fkey")
+
+  @@unique([workspaceId, teamId, id], map: "ai_plans_workspace_team_id_key")
+  @@unique([id, activeVersionId], map: "ai_plans_id_active_version_id_key")
+  @@unique([creatorId, workspaceId, teamId, cloneRequestKey], map: "ai_plans_clone_request_key_key")
+  @@index([creatorId, updatedAt(sort: Desc), id(sort: Desc)], map: "ai_plans_creator_updated_at_id_idx")
+  @@index([expiresAt, status], map: "ai_plans_expiry_status_idx")
+  @@map("ai_plans")
+}
+
+model AiPlanVersion {
+  id              String              @id @default(uuid()) @db.Uuid
+  planId          String              @map("plan_id") @db.Uuid
+  ordinal         Int
+  parentVersionId String?             @map("parent_version_id") @db.Uuid
+  baseVersionId   String?             @map("base_version_id") @db.Uuid
+  source          AiPlanVersionSource @default(GENERATED)
+  schemaVersion   Int                 @default(1) @map("schema_version") @db.SmallInt
+  draft           Json                @db.JsonB
+  inputSnapshot   Json                @map("input_snapshot") @db.JsonB
+  contextSnapshot Json?               @map("context_snapshot") @db.JsonB
+  fieldLocks      Json                @default("[]") @map("field_locks") @db.JsonB
+  contentHash     String              @map("content_hash") @db.Char(64)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  plan            AiPlan              @relation(fields: [planId], references: [id], onDelete: Cascade, map: "ai_plan_versions_plan_id_fkey")
+  parent          AiPlanVersion?      @relation("AiPlanVersionParent", fields: [planId, parentVersionId], references: [planId, id], onDelete: Restrict, map: "ai_plan_versions_parent_fkey")
+  children        AiPlanVersion[]     @relation("AiPlanVersionParent")
+  baseVersion     AiPlanVersion?      @relation("AiPlanVersionBase", fields: [planId, baseVersionId], references: [planId, id], onDelete: Restrict, map: "ai_plan_versions_base_fkey")
+  baseChildren    AiPlanVersion[]     @relation("AiPlanVersionBase")
+  jobs            AiJob[]             @relation("AiJobResultVersion")
+  importedBy      AiImportReceipt[]
+  activeForPlan   AiPlan?             @relation("AiPlanActiveVersion")
+
+  @@unique([planId, id], map: "ai_plan_versions_plan_id_id_key")
+  @@unique([planId, ordinal], map: "ai_plan_versions_plan_ordinal_key")
+  @@index([planId, createdAt(sort: Desc), id(sort: Desc)], map: "ai_plan_versions_plan_created_at_id_idx")
+  @@map("ai_plan_versions")
+}
+
+model AiJob {
+  id                       String         @id @default(uuid()) @db.Uuid
+  planId                   String         @map("plan_id") @db.Uuid
+  workspaceId              String         @map("workspace_id") @db.Uuid
+  teamId                   String         @map("team_id") @db.Uuid
+  creatorId                String         @map("creator_id") @db.Uuid
+  credentialRevision       String         @map("credential_revision") @db.Uuid
+  retryRootId              String         @map("retry_root_id") @db.Uuid
+  attemptLimit             Int            @default(4) @map("attempt_limit")
+  usageDate                DateTime       @map("usage_date") @db.Date
+  maxInputTokens           Int            @map("max_input_tokens")
+  maxOutputTokens          Int            @map("max_output_tokens")
+  action                   AiJobAction    @default(GENERATE)
+  status                   AiJobStatus    @default(QUEUED)
+  requestKey               String         @map("request_key") @db.VarChar(128)
+  requestHash              String         @map("request_hash") @db.Char(64)
+  input                    Json           @db.JsonB
+  stages                   Json           @default("[]") @db.JsonB
+  checkpoint               Json?          @db.JsonB
+  currentStage             String?        @map("current_stage") @db.VarChar(40)
+  sequence                 Int            @default(0)
+  leaseToken               String?        @map("lease_token") @db.Uuid
+  leaseExpiresAt           DateTime?      @map("lease_expires_at") @db.Timestamptz(6)
+  attempt                  Int            @default(0)
+  providerAttempts         Int            @default(0) @map("provider_attempts")
+  providerAttemptStartedAt DateTime?      @map("provider_attempt_started_at") @db.Timestamptz(6)
+  providerAttemptUnknown   Boolean        @default(false) @map("provider_attempt_unknown")
+  providerCallsUsed        Int            @default(0) @map("provider_calls_used")
+  inputTokensUsed          Int            @default(0) @map("input_tokens_used")
+  outputTokensUsed         Int            @default(0) @map("output_tokens_used")
+  quotaSettled             Boolean        @default(false) @map("quota_settled")
+  model                    String         @db.VarChar(128)
+  promptVersion            String         @map("prompt_version") @db.VarChar(32)
+  outputVersionId          String?        @map("output_version_id") @db.Uuid
+  safeErrorCode            String?        @map("safe_error_code") @db.VarChar(64)
+  createdAt                DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  startedAt                DateTime?      @map("started_at") @db.Timestamptz(6)
+  processingStartedAt      DateTime?      @map("processing_started_at") @db.Timestamptz(6)
+  finishedAt               DateTime?      @map("finished_at") @db.Timestamptz(6)
+  expiresAt                DateTime       @map("expires_at") @db.Timestamptz(6)
+  plan                     AiPlan         @relation(fields: [workspaceId, teamId, planId], references: [workspaceId, teamId, id], onDelete: Cascade, map: "ai_jobs_scope_plan_fkey")
+  team                     Team           @relation("AiJobTeam", fields: [workspaceId, teamId], references: [workspaceId, id], onDelete: Cascade, map: "ai_jobs_scope_team_fkey")
+  creator                  User           @relation(fields: [creatorId], references: [id], onDelete: Restrict, map: "ai_jobs_creator_id_fkey")
+  outputVersion            AiPlanVersion? @relation("AiJobResultVersion", fields: [planId, outputVersionId], references: [planId, id], onDelete: Restrict, map: "ai_jobs_output_version_fkey")
+
+  @@unique([creatorId, workspaceId, teamId, requestKey], map: "ai_jobs_request_key_key")
+  @@index([creatorId, createdAt(sort: Desc), id(sort: Desc)], map: "ai_jobs_creator_created_at_id_idx")
+  @@index([status, createdAt, id], map: "ai_jobs_status_created_at_id_idx")
+  @@index([leaseExpiresAt, status], map: "ai_jobs_lease_status_idx")
+  @@index([planId, createdAt(sort: Desc), id(sort: Desc)], map: "ai_jobs_plan_created_at_id_idx")
+  @@index([retryRootId, createdAt, id], map: "ai_jobs_retry_root_idx")
+  @@map("ai_jobs")
+}
+
+model AiImportReceipt {
+  planId             String        @id @map("plan_id") @db.Uuid
+  confirmedVersionId String        @map("confirmed_version_id") @db.Uuid
+  requestKey         String        @map("request_key") @db.VarChar(128)
+  payloadHash        String        @map("payload_hash") @db.Char(64)
+  itemTaskMap        Json          @map("item_task_map") @db.JsonB
+  response           Json          @db.JsonB
+  committedAt        DateTime      @default(now()) @map("committed_at") @db.Timestamptz(6)
+  plan               AiPlan        @relation(fields: [planId], references: [id], onDelete: Restrict, map: "ai_imports_plan_id_fkey")
+  version            AiPlanVersion @relation(fields: [planId, confirmedVersionId], references: [planId, id], onDelete: Restrict, map: "ai_imports_version_fkey")
+
+  @@map("ai_imports")
+}
+
+model AiUsageDaily {
+  scopeType            AiUsageScopeType @map("scope_type")
+  scopeId              String           @map("scope_id") @db.Uuid
+  usageDate            DateTime         @map("usage_date") @db.Date
+  operationsReserved   Int              @default(0) @map("operations_reserved")
+  operationsUsed       Int              @default(0) @map("operations_used")
+  callsReserved        Int              @default(0) @map("calls_reserved")
+  callsUsed            Int              @default(0) @map("calls_used")
+  inputTokensReserved  BigInt           @default(0) @map("input_tokens_reserved")
+  inputTokensUsed      BigInt           @default(0) @map("input_tokens_used")
+  outputTokensReserved BigInt           @default(0) @map("output_tokens_reserved")
+  outputTokensUsed     BigInt           @default(0) @map("output_tokens_used")
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@id([scopeType, scopeId, usageDate], map: "ai_usage_daily_pkey")
+  @@index([usageDate, scopeType], map: "ai_usage_daily_date_scope_idx")
+  @@map("ai_usage_daily")
+}
+
+model AiRuntimeControl {
+  id             Int      @id @default(1)
+  quarantined    Boolean  @default(false)
+  quarantineReason String? @map("quarantine_reason") @db.VarChar(128)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("ai_runtime_control")
+}
+
+model AiQuotaReconciliation {
+  id                    String   @id @default(uuid()) @db.Uuid
+  usageDate             DateTime @map("usage_date") @db.Date
+  operationsUsed        Int      @map("operations_used")
+  providerCallsUsed     Int      @map("provider_calls_used")
+  inputTokensUsed       BigInt   @map("input_tokens_used") @db.BigInt
+  outputTokensUsed      BigInt   @map("output_tokens_used") @db.BigInt
+  unknownProviderCalls  Int      @map("unknown_provider_calls")
+  enabledAfterReview    Boolean  @map("enabled_after_review")
+  operator              String   @db.VarChar(120)
+  reason                String   @db.VarChar(1000)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([usageDate, createdAt(sort: Desc)], map: "ai_quota_reconciliations_date_created_idx")
+  @@map("ai_quota_reconciliations")
+}
+
+model TaskChecklist {
+  id          String   @id @default(uuid()) @db.Uuid
+  taskId      String   @map("task_id") @db.Uuid
+  position    Int
+  title       String   @db.VarChar(200)
+  isCompleted Boolean  @default(false) @map("is_completed")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade, map: "task_subtasks_task_id_fkey")
+
+  @@unique([taskId, position], map: "task_subtasks_task_position_key")
+  @@map("task_subtasks")
+}
+
+model TaskDependency {
+  workspaceId    String   @map("workspace_id") @db.Uuid
+  teamId         String   @map("team_id") @db.Uuid
+  taskId         String   @map("task_id") @db.Uuid
+  prerequisiteId String   @map("prerequisite_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  task           Task     @relation("TaskDependencies", fields: [workspaceId, teamId, taskId], references: [workspaceId, teamId, id], onDelete: Cascade, map: "task_dependencies_task_fkey")
+  prerequisite   Task     @relation("TaskDependents", fields: [workspaceId, teamId, prerequisiteId], references: [workspaceId, teamId, id], onDelete: Restrict, map: "task_dependencies_prerequisite_fkey")
+
+  @@id([taskId, prerequisiteId], map: "task_dependencies_pkey")
+  @@index([workspaceId, teamId, prerequisiteId], map: "task_dependencies_prerequisite_idx")
+  @@map("task_dependencies")
+}
