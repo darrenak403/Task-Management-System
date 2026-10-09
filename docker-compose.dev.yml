@@ -71,6 +71,33 @@ services:
     restart: unless-stopped
     networks: [backend, egress]
 
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: web
+      args:
+        APP_BUILD_SHA: ${APP_BUILD_SHA:-local}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 4s
+      retries: 8
+      start_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /workspace/apps/web/.next/cache:uid=1000,gid=1000,mode=0755,size=128m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [egress]
+
 volumes:
   backend-postgres-data:
 
