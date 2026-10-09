@@ -26,10 +26,15 @@ export function createGeminiCredentialController(service: GeminiCredentialServic
     response.status(200).json({ data: metadata });
   };
 
+  const test: RequestHandler = async (request, response) => {
+    response.setHeader('Cache-Control', 'no-store');
+    response.status(200).json({ data: await service.test(currentUserId(request)) });
+  };
+
   const remove: RequestHandler = async (request, response) => {
     await service.remove(currentUserId(request));
     response.status(204).end();
   };
 
-  return { get, put, updateModel, remove };
+  return { get, put, updateModel, test, remove };
 }

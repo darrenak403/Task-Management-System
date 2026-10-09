@@ -10,7 +10,7 @@ import type { CreatePlanInput } from './planner.schemas.js';
 import { createPlanSchema } from './planner.schemas.js';
 import { persistedCandidateSchema, plannerFieldLockSchema, planDraftContentSchema, type GenerateRevisionRequest, type PlannerFieldLock } from './version.schemas.js';
 import { initialStages, PLANNER_STAGES, stageTransition, type PlannerStage } from './stage-catalog.js';
-import { assertAiRuntimeAvailable, businessUsageDate, quotaScopes, reserveQuota, settleQuota } from './quota.service.js';
+import { assertAiRuntimeAvailable, businessUsageDate, quotaScopes, reserveQuota, settleQuota, dailyUsage } from './quota.service.js';
 
 const ACTIVE_JOB_STATUSES = ['QUEUED', 'RUNNING', 'NEEDS_CLARIFICATION'] as const;
 const RETRY_ROOT_LIMIT = 4;
@@ -53,6 +53,7 @@ export class AiJobService {
       available,
       model: credential?.model ?? null,
       credentialRequired,
+      dailyUsage: await dailyUsage(this.prisma, userId),
       unavailableReason: quarantined ? 'restore_quarantine'
         : !this.environment.AI_ENABLED ? this.environment.aiUnavailableReason
           : credentialRequired ? 'credential_required' : modelRequired ? 'model_required' : this.environment.aiUnavailableReason,

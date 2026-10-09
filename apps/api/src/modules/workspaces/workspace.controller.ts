@@ -2,6 +2,7 @@ import type { RequestHandler } from 'express';
 import { parseInput, paginationSchema } from '../../shared/http/pagination.js';
 import type { WorkspaceService } from './workspace.service.js';
 import {
+  memberCandidateQuerySchema,
   addWorkspaceMemberSchema,
   createWorkspaceSchema,
   updateWorkspaceMemberSchema,
@@ -41,6 +42,12 @@ export function createWorkspaceController(service: WorkspaceService) {
     response.status(200).json(await service.listMembers(requireAuthenticated(request).user.id, workspaceId, pagination));
   };
 
+  const listMemberCandidates: RequestHandler = async (request, response) => {
+    const { workspaceId } = parseInput(workspaceIdParamsSchema, request.params);
+    const { search } = parseInput(memberCandidateQuerySchema, request.query);
+    response.status(200).json(await service.listMemberCandidates(requireAuthenticated(request).user.id, workspaceId, search));
+  };
+
   const addMember: RequestHandler = async (request, response) => {
     const { workspaceId } = parseInput(workspaceIdParamsSchema, request.params);
     const input = parseInput(addWorkspaceMemberSchema, request.body);
@@ -61,5 +68,5 @@ export function createWorkspaceController(service: WorkspaceService) {
     response.status(204).end();
   };
 
-  return { list, create, get, update, listMembers, addMember, updateMember, removeMember };
+  return { list, create, get, update, listMembers, listMemberCandidates, addMember, updateMember, removeMember };
 }

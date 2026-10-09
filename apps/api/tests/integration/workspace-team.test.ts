@@ -86,6 +86,27 @@ describe('workspace and team APIs', () => {
     expect(memberCreateTeam.status).toBe(403);
   });
 
+  it('lists accounts outside the workspace as member candidates for owners and admins only', async () => {
+    const owner = await registerTestUser(app, 'owner@example.com');
+    const workspace = await createTestWorkspace(app, owner.cookie);
+    const member = await registerTestUser(app, 'member@example.com');
+    await registerTestUser(app, 'linh@example.com');
+    await registerTestUser(app, 'quang@example.com');
+    await request(app).post(`/api/workspaces/${workspace.id}/members`).set('Origin', trustedTestOrigin).set('Cookie', owner.cookie).send({ email: 'member@example.com' });
+
+    const all = await request(app).get(`/api/workspaces/${workspace.id}/member-candidates`).set('Cookie', owner.cookie);
+    const searched = await request(app).get(`/api/workspaces/${workspace.id}/member-candidates`).query({ search: 'QUA' }).set('Cookie', owner.cookie);
+    const asMember = await request(app).get(`/api/workspaces/${workspace.id}/member-candidates`).set('Cookie', member.cookie);
+    const anonymous = await request(app).get(`/api/workspaces/${workspace.id}/member-candidates`);
+
+    expect(all.status).toBe(200);
+    expect(all.body.data.map(({ email }: { email: string }) => email)).toEqual(['linh@example.com', 'quang@example.com']);
+    expect(Object.keys(all.body.data[0]).sort()).toEqual(['displayName', 'email', 'id']);
+    expect(searched.body.data.map(({ email }: { email: string }) => email)).toEqual(['quang@example.com']);
+    expect(asMember.status).toBe(403);
+    expect(anonymous.status).toBe(401);
+  });
+
   it('atomically clears assignments and revokes team/workspace membership without deleting task history', async () => {
     const owner = await registerTestUser(app, 'owner@example.com');
     const workspace = await createTestWorkspace(app, owner.cookie);

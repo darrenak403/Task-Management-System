@@ -5,9 +5,9 @@
 - Nguồn: [đề bài tuyển dụng](../../README.md); vai trò Fullstack, thời hạn **2 ngày**.
 - Phạm vi đã xác nhận: **workspace → team → task**, team có thành viên/quyền riêng; MVP, **6 mục cộng điểm** và **AI Smart Task Planner toàn bộ MVP + nâng cao**, Gemini BYOK theo tài khoản, subtask checklist và **realtime không polling**.
 - Kiến trúc được chọn: **Next.js frontend + Express backend riêng**, TypeScript, PostgreSQL và Prisma, xác nhận ngày 09/10/2026.
-- Đây là thiết kế trước khi code; checklist là tiêu chí cần hoàn thành. Giới hạn trường, deadline, session và phân trang là quyết định cho phần đề bài chưa quy định.
+- Tài liệu thiết kế gốc, đã được cập nhật theo backend và web hiện có trong repo; checklist mục 14 là tiêu chí cần hoàn thành, chưa phải kết quả nghiệm thu. Đối chiếu từng ID với code và bằng chứng nằm ở [PRD traceability](../01-requirements/prd-traceability.md). Giới hạn trường, deadline, session và phân trang là quyết định cho phần đề bài chưa quy định.
 - Workspace/team là mở rộng do chủ repo yêu cầu ngày 09/10/2026, thay thế thiết kế task cá nhân trước đó. "Dữ liệu của mình" được diễn giải là dữ liệu người dùng có quyền qua membership; task được chia sẻ trong team. README gốc được giữ làm đề bài, tài liệu này ghi rõ phần mở rộng.
-- DevOps đã chốt: **CI/CD bằng GitHub Actions → Docker Hub → Dokploy → VPS**. Chưa rõ quỹ giờ, VPS/domain và quyền truy cập thực tế; chuẩn bị đầu ngày 1, không mặc định đăng ký dịch vụ trả phí.
+- DevOps đã chốt: **GitHub Actions build và đẩy image lên Docker Hub → người vận hành bấm Deploy thủ công trong Dokploy trên VPS**; Cloudflare Tunnel chạy trên host là điểm vào công khai duy nhất (định tuyến theo path, mục 11–12). Workflow không giữ credential Dokploy và không tự deploy. Không mặc định đăng ký dịch vụ trả phí.
 
 ### Mục tiêu
 
@@ -43,11 +43,11 @@ Next.js có HTTP endpoints và hỗ trợ proxy tới backend; không bắt bu�
 | --- | --- | --- |
 | Runtime | Node.js LTS còn hỗ trợ tại lúc setup | Cùng runtime cho web/API/CI/Docker |
 | Ngôn ngữ | TypeScript strict | Kiểu dữ liệu rõ giữa route, service, DB và UI |
-| Frontend | Next.js App Router, React | Theo lựa chọn của chủ repo; layout/routes và UI tương tác |
-| UI components | shadcn/ui | Dashboard, Sidebar, Task Table, Dialog, Form, Calendar; source do dự án quản lý |
-| Animation | React Bits, biến thể TypeScript + Tailwind | Hiệu ứng xuất hiện, chuyển cảnh, text và tương tác được chọn ở mục 9 |
-| Styling | Tailwind CSS + semantic design tokens | Thống nhất màu, typography, spacing, trạng thái và responsive |
-| Kéo thả | dnd-kit cho React | Phục vụ trực tiếp Kanban; chốt package/API từ tài liệu lúc setup |
+| Frontend | Next.js 16 App Router, React 19 | Theo lựa chọn của chủ repo; layout/routes và UI tương tác |
+| UI components | shadcn/ui (Radix, style `radix-nova`) | Dashboard, Sidebar, Task Table, Dialog, Form, Calendar; source do dự án quản lý |
+| Animation | React Bits (BlurText) trên thư viện `motion` | Chỉ dùng cho tiêu đề; xem mục 9 |
+| Styling | Tailwind CSS 4 + semantic design tokens, `next-themes` | Thống nhất màu, typography, spacing, trạng thái; light + dark mode |
+| Kéo thả | dnd-kit (core, sortable, modifiers) qua block Kanban của Dice UI | Phục vụ trực tiếp Kanban; có sensor bàn phím và cảm ứng |
 | Backend | Express | REST API nhỏ, middleware rõ |
 | Validation | Zod | Kiểm tra body/query/params; tái sử dụng schema để tạo OpenAPI |
 | AI planning | Gemini API theo user BYOK, @google/genai, PostgreSQL jobs/versions/credentials | Worker event-driven dùng key của creator; structured draft, import nguyên tử; không thêm queue service |
@@ -57,14 +57,14 @@ Next.js có HTTP endpoints và hỗ trợ proxy tới backend; không bắt bu�
 | Password/session | Argon2id + opaque session trong DB | Hash an toàn; logout thu hồi được phía server |
 | API docs | OpenAPI 3.x + Swagger UI | Reviewer kiểm tra API và contract |
 | Kiểm thử | Vitest + Supertest + PostgreSQL test riêng | Gọi HTTP thực của Express, kiểm tra DB/membership/authorization |
-| Vận hành | Docker Compose, GitHub Actions, Docker Hub, Dokploy trên VPS | CI kiểm tra/build/push image; Dokploy deploy và vận hành trên VPS |
-| State phía FE | fetch và state/hooks theo tính năng | Đủ cho quy mô; không thêm global store khi chưa cần |
+| Vận hành | Docker Compose, GitHub Actions, Docker Hub, Dokploy trên VPS, Cloudflare Tunnel | CI kiểm tra/build/push image; Dokploy deploy thủ công; tunnel định tuyến path tới API hoặc web |
+| State phía FE | TanStack Query 5, chỉ dùng bên trong `lib/use-resource.ts` và `lib/use-paged-list.ts`; zod cho form; không form library | Cache trong memory theo key user/scope/query; không refetch theo timer, focus hay reconnect; không global store, không Server Actions |
 
-Khóa phiên bản đã kiểm tra tương thích trong lockfile, Node version file và Docker image. Không sử dụng tag `latest` trong bản bàn giao. Không chốt số version chưa kiểm tra tương thích giữa Next.js, Prisma và Node.js.
+Khóa phiên bản đã kiểm tra tương thích trong lockfile, Node version file và Docker image. Image được gắn tag `sha-<commit>` và `latest`; `docker-compose.prod.yml` mặc định kéo `latest`, còn rollback hoặc ghim phiên bản dùng tag `sha-<commit>` hoặc digest. Không chốt số version chưa kiểm tra tương thích giữa Next.js, Prisma và Node.js.
 
 ## 4. Kiến trúc tổng thể
 
-Chọn **modular monolith cho BE, FE chia theo feature, hai Node processes cùng một public origin và một PostgreSQL**. Module là ranh giới code/nghiệp vụ, không phải microservice; transaction của membership và task vẫn nằm trong một DB. Next.js làm UI và HTTP proxy, Express là nguồn quyết định nghiệp vụ/quyền, DB giữ invariants, DevOps giữ vòng đời và dữ liệu.
+Chọn **modular monolith cho BE, FE chia theo feature, hai Node processes cùng một public origin và một PostgreSQL**. Module là ranh giới code/nghiệp vụ, không phải microservice; transaction của membership và task vẫn nằm trong một DB. Next.js chỉ làm UI (không chứa nghiệp vụ, không proxy ở production), Express là nguồn quyết định nghiệp vụ/quyền, DB giữ invariants, DevOps giữ vòng đời và dữ liệu.
 
 | Ranh giới | Chủ sở hữu | Quy tắc phối hợp |
 | --- | --- | --- |
@@ -76,9 +76,10 @@ Chọn **modular monolith cho BE, FE chia theo feature, hai Node processes cùng
 
 ```mermaid
 flowchart LR
-    Browser[Browser] -->|HTTPS REST cùng origin| Web[Next.js web]
-    Browser -->|SSE qua Traefik exact path| API
-    Web -->|Proxy /api/* và cookie| API[Express API]
+    Browser[Browser] -->|HTTPS cùng origin| Tunnel[Cloudflare Tunnel]
+    Tunnel -->|task-api: Swagger, health| API[Express API]
+    Tunnel -->|task: ứng dụng| Web[Next.js web]
+    Web -->|chuyển tiếp /api/* gồm REST và SSE| API
     API --> Auth[Auth module]
     API --> Workspaces[Workspaces và teams]
     API --> Access[Authorization theo membership]
@@ -97,7 +98,7 @@ flowchart LR
     CI --> Builds[Tests và builds]
 ```
 
-- Browser gọi `/api/...` cùng origin; REST qua Next rewrites, production SSE `/api/realtime/events` qua Traefik trực tiếp Express theo [topology realtime](ai-and-realtime-technical-design.md#152-luồng-và-topology). Next không chứa nghiệp vụ. [Next.js rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)
+- Browser luôn gọi `/api/...` cùng origin trên hostname web. Web server (Next rewrite) chuyển tiếp `/api/*`, gồm REST và SSE `/api/realtime/events`, tới API ở cả local và production; API còn có hostname riêng `task-api.darrenak.id.vn` cho Swagger, health và gọi trực tiếp. Cookie phiên vì vậy luôn là first-party và API không cần CORS.
 - Cookie/`Set-Cookie` qua proxy, không Domain nội bộ. Express quyết định auth/quyền/validation/nghiệp vụ; redirect/ẩn nút FE chỉ phục vụ UX.
 - Trang dữ liệu workspace/team dùng client fetch và `Cache-Control: no-store` cho API. Không tạo static page/cache chung chứa dữ liệu được bảo vệ.
 - npm workspaces; một web/API instance cho demo, worker AI nằm trong API process; chưa mở rộng scale hoặc thêm monorepo orchestration.
@@ -151,12 +152,12 @@ Graceful shutdown không đóng DB trước request đang chạy; liveness chỉ
 ```mermaid
 sequenceDiagram
     participant UI as Browser board
-    participant Web as Next.js proxy
+    participant Web as Web server (chuyển tiếp /api/*)
     participant API as Express service
     participant DB as PostgreSQL
     UI->>UI: Giữ snapshot card và optimistic status
     UI->>Web: PATCH cùng origin, cookie và scope URL
-    Web->>API: Forward Cookie, Origin và request ID
+    Web->>API: Chuyển Cookie, Origin giữ nguyên
     API->>DB: Validate session; BEGIN, lock memberships, check policy
     API->>DB: UPDATE task đúng scope; COMMIT
     DB-->>API: Commit thành công
@@ -166,28 +167,31 @@ sequenceDiagram
     Note over UI,DB: Mất response không chứng minh rollback; refetch để đối soát
 ```
 
-Login dùng cùng HTTP path: origin/validation/limiter → verify hash ngoài transaction → session write/commit → Set-Cookie qua Next → FE gọi me/workspaces. Không trả cookie trước khi session commit. Backend timeout không được mô phỏng chỉ bằng Promise.race vì request hết thời gian không tự hủy query/transaction DB.
+Login dùng cùng HTTP path: origin/validation/limiter → verify hash ngoài transaction → session write/commit → Set-Cookie qua tunnel → FE gọi me/workspaces. Không trả cookie trước khi session commit. Backend timeout không được mô phỏng chỉ bằng Promise.race vì request hết thời gian không tự hủy query/transaction DB.
 
-### Cấu trúc repo mục tiêu
+### Cấu trúc repo
 
 ```text
 apps/api/
-  src/modules/{auth,workspaces,teams,tasks,dashboard,planner,realtime}/
-  src/shared/{authorization,errors,config,logging}/
+  src/modules/{auth,workspaces,teams,tasks,dashboard,planner,realtime,ai-credentials,openapi,health}/
+  src/shared/; src/jobs/        # Cross-cutting; one-shot maintenance commands
   src/{app.ts,server.ts}        # App factory; runtime lifecycle
   prisma/{schema.prisma,migrations/,seed.ts}
-  tests/integration/
-  Dockerfile; .env.example
+  tests/{unit,integration,smoke}/
+  Dockerfile                    # Targets: api, migrate
 apps/web/
-  src/app/                     # Routes/layouts và error boundaries
-  src/features/{auth,workspaces,teams,tasks,dashboard,planner}/
-  src/components/ui/; src/lib/{api-client.ts,realtime-provider.tsx}
-  Dockerfile; .env.example
-docs/README.md; docs/01-requirements/{task-management-system-prd.md,ai-smart-task-planner-prd.md}; docs/02-architecture/{system-architecture.md,ai-and-realtime-technical-design.md}; .github/workflows/{ci.yml,release.yml}
-docker-compose.dev.yml; docker-compose.prod.yml; package.json; package-lock.json; README.md
+  src/app/                      # (auth)/{login,register}; (app)/workspaces/...; error/not-found
+  src/features/{auth,workspaces,teams,tasks,dashboard,ai-planner,ai-settings}/
+  src/components/{ui,ai-elements,motion}/ + shell, theme, query providers
+  src/lib/{api-client.ts,api-types.ts,use-resource.ts,use-paged-list.ts,realtime/}
+  Dockerfile; next.config.ts    # Standalone output; dev-only /api rewrite
+docs/{01-requirements,02-architecture,03-operations}/; .github/workflows/{backend-ci,backend-release,web-ci,web-release}.yml
+docker-compose.dev.yml          # db, migrate, api (backend only)
+docker-compose.prod.yml         # db, migrate, api, web
+.env.example; Taskfile.yml; package.json; package-lock.json; README.md
 ```
 
-Đây là mô tả cấu trúc tương lai, không phải các file đã được tạo. DTO phía FE theo OpenAPI; không import Prisma models/client vào browser. Chỉ tạo shared package nếu thực tế xuất hiện contract dùng chung cần quản lý.
+DTO phía FE lấy từ OpenAPI: `apps/web/src/lib/api-types.ts` được sinh bằng `npm --workspace @task-management/web run api:types` từ API đang chạy; không import Prisma models/client vào browser. Chỉ tạo shared package nếu thực tế xuất hiện contract dùng chung cần quản lý.
 
 ## 5. Quy tắc nghiệp vụ
 
@@ -336,8 +340,8 @@ erDiagram
 
 - Dev tạo migration; môi trường CI/demo áp dụng migration đã commit bằng `prisma migrate deploy`. Không dùng `db push` làm quy trình bàn giao. [Prisma applying migrations](https://www.prisma.io/docs/orm/migrations/applying-a-migration)
 - Seed là thao tác tường minh sau migration; không chạy mỗi lần API restart.
-- Seed hai workspaces; workspace A có team Backend/Frontend và tài khoản owner, admin, member Backend, member Frontend, member cả hai; thêm owner riêng workspace B để kiểm tra cô lập.
-- Khoảng 40 task Backend, 25 task Frontend, 8 task workspace B; đủ statuses/priorities/pages, nhiều creators/assignees, task chưa giao; deadline hôm qua/hôm nay/+6/+7/null.
+- Seed hai tài khoản, mỗi tài khoản là owner của một workspace riêng: workspace A có team Backend/Frontend, workspace B có một team; hai workspace không thấy nhau, dùng để kiểm tra cô lập. Thành viên khác được thêm bằng cách mời qua giao diện.
+- Hiện tại seed có 24 task Backend, 14 task Frontend, 6 task workspace B (nội dung tiếng Việt trong `apps/api/prisma/seed-data.ts`), kèm checklist và phụ thuộc giữa các task; đủ statuses/priorities/pages, task đã giao cho owner và task chưa giao; deadline hôm qua/hôm nay/+6/+7/null.
 - UUID seed cố định và upsert giúp không nhân bản dữ liệu khi chạy lại. Deadline được tạo tương đối với ngày chạy seed; ghi rõ seed lại sẽ reset dữ liệu mẫu tương ứng.
 - Mật khẩu demo qua env seed `DEMO_PASSWORD`, hash từng user bằng cùng cơ chế auth; không dùng mật khẩu thật. Public demo chỉ chứa dữ liệu giả, README ghi các persona và phạm vi quyền của từng tài khoản.
 - Không seed tài khoản demo vào database production khác mục đích nếu chưa bật chế độ demo một cách tường minh.
@@ -428,7 +432,7 @@ Prefix công khai `/api`; JSON UTF-8. Auth API trả user công khai `{ id, emai
 
 `:wid/:tid/:uid/:id` là UUID. Workspace/team/member lists dùng page/pageSize cùng giới hạn mục 5, sort `createdAt ASC` rồi ID ổn định; membership tie-breaker userId. Không trả roster workspace cho MEMBER. Roster team trả dữ liệu công khai cần cho lựa chọn assignee, không trả session/password. Mọi list response dùng `{ data, meta }`.
 
-Thêm member đã có membership trả 409 MEMBER_ALREADY_EXISTS. Email chưa đăng ký trả 404 USER_NOT_FOUND cho người có quyền thêm; userId ngoài workspace khi thêm team trả 400 INVALID_TEAM_MEMBER. Role OWNER không là giá trị hợp lệ cho PATCH role. Không có DELETE workspace/team trong bản này.
+`GET /workspaces/:wid/member-candidates?search=` trả tối đa 20 tài khoản chưa thuộc workspace (id, email, displayName) cho OWNER/ADMIN để chọn khi mời; đây là đánh đổi có chủ ý: người quản lý workspace nào cũng tra được email của tài khoản đã đăng ký. Thêm member đã có membership trả 409 MEMBER_ALREADY_EXISTS. Email chưa đăng ký trả 404 USER_NOT_FOUND cho người có quyền thêm; userId ngoài workspace khi thêm team trả 400 INVALID_TEAM_MEMBER. Role OWNER không là giá trị hợp lệ cho PATCH role. Không có DELETE workspace/team trong bản này.
 
 ### Request/response ví dụ
 
@@ -495,7 +499,7 @@ App Router layouts/pages giữ Server Components cho shell tĩnh; Client boundar
 | lib/api-client | fetch cùng origin, parse DTO/envelope, error classification, cancellation | Một đường HTTP; không dùng Server Actions tạo mutation path thứ hai |
 | Session/realtime state | me + auth state; một EventSource/tab, ready/reconnecting/resync | Providers dưới protected shell; cleanup khi scope/logout; không raw token, không polling |
 | URL state | wid/tid ở path; q/status/priority/assignee/page/view ở query | Deep link/reload giữ filter; validate query và reset page khi đổi filter |
-| Server data state | DTO theo user/scope/query và request generation | Cache trong memory theo feature; logout/switch scope abort và bỏ callbacks cũ |
+| Server data state | DTO theo user/scope/query và request generation | TanStack Query (trong `use-resource`/`use-paged-list`), cache trong memory theo key; logout xóa cache, đổi scope hủy request cũ |
 | Local UI state | Dialog, draft, drag/pending/errors | Không tạo bản sao task toàn app để tránh hai nguồn dữ liệu |
 
 Protected data chỉ fetch sau me thành công; me lỗi mạng không coi là logout. useSearchParams trên shell prerender đặt trong Suspense phù hợp Next version; production build phải kiểm tra boundary này. Dữ liệu nhạy cảm không đưa vào localStorage/service worker, không dùng ISR/use cache/RSC props cho task trong phương án đã chọn. Asset tĩnh vẫn cache được; no-store API không thay thế việc xóa memory state. [Next useSearchParams](https://nextjs.org/docs/app/api-reference/functions/use-search-params)
@@ -509,11 +513,11 @@ Protected data chỉ fetch sau me thành công; me lỗi mạng không coi là l
 | Quyền/data thay đổi trong tab khác | SSE invalidations coalesce + one-shot GET; access/auth control purge scope và close stream; dirty/inflight guards theo realtime design | Hai browsers cập nhật task/AI, revoke/expiry ngay; reconnect không polling |
 | Bundle/hydration nặng | dnd-kit chỉ trong board; list/form không phụ thuộc drag module; lazy-load board nếu bundle đo được cần; dueDate hiển thị chuỗi lịch | Build bundle, mobile keyboard/touch, không hydration warning |
 
-Request cleanup/ignore response giúp tránh race trong effect; hooks dùng chung giảm fetch boilerplate nhưng không xây một query framework riêng. Khi nhu cầu cache/dedup tăng, cân nhắc thư viện state chỉ sau yêu cầu/chứng cứ; baseline vẫn fetch/hooks. [React useEffect](https://react.dev/reference/react/useEffect)
+Request cleanup/ignore response giúp tránh race trong effect; `use-resource` và `use-paged-list` là hai hook duy nhất bọc TanStack Query: feature không gọi `useQuery` trực tiếp, và provider tắt retry, refetch theo focus và theo reconnect (`staleTime: 0`), nên dữ liệu mới chỉ đến từ sự kiện realtime hoặc reload tường minh. [React useEffect](https://react.dev/reference/react/useEffect)
 
 ### UI components, animation và design system
 
-Chủ repo bổ sung **shadcn/ui + React Bits + Tailwind CSS** cho FE. Component nghiệp vụ trong features/* kết hợp các primitives; một preset shadcn thống nhất (Radix hoặc Base UI, chốt lúc setup), source ở apps/web/src/components/ui. React Bits chỉ lấy component cần dùng, chọn TS-TW, kiểm tra dependencies từng component và pin lockfile. [shadcn Next.js](https://ui.shadcn.com/docs/installation/next), [React Bits chính thức](https://github.com/DavidHDev/react-bits).
+Chủ repo bổ sung **shadcn/ui + React Bits + Tailwind CSS** cho FE. Component nghiệp vụ trong features/* kết hợp các primitives; một preset shadcn thống nhất (Radix, style `radix-nova`), source ở apps/web/src/components/ui. React Bits chỉ lấy component cần dùng, chọn TS-TW, kiểm tra dependencies từng component và pin lockfile. [shadcn Next.js](https://ui.shadcn.com/docs/installation/next), [React Bits chính thức](https://github.com/DavidHDev/react-bits).
 
 | Giao diện | Component và trách nhiệm |
 | --- | --- |
@@ -524,11 +528,11 @@ Chủ repo bổ sung **shadcn/ui + React Bits + Tailwind CSS** cho FE. Component
 | Form | Field/Input/Textarea/Select/Button; label và lỗi gắn đúng field, Zod validation + server errors, disable submit khi pending; chưa thêm form/state library |
 | Calendar | Calendar + Popover chọn một ngày deadline, cho phép ngày quá khứ và clear về null; đọc năm/tháng/ngày để tạo YYYY-MM-DD, không cắt toISOString gây lệch ngày |
 
-- **Design tokens:** globals.css giữ semantic CSS variables background/foreground, primary, muted, border, ring, sidebar, destructive và status/priority; với Tailwind v4 ánh xạ qua @theme inline. Quy định spacing, typography, radius và duration dùng chung; nền sáng, điểm nhấn cam theo README; trạng thái có text/icon cùng màu. [shadcn theming](https://ui.shadcn.com/docs/theming), [Tailwind theme](https://tailwindcss.com/docs/theme).
+- **Design tokens:** globals.css giữ semantic CSS variables background/foreground, primary, muted, border, ring, sidebar, destructive và status/priority; với Tailwind v4 ánh xạ qua @theme inline. Quy định spacing, typography, radius và duration dùng chung; hai bộ token light và dark (`next-themes`, class `.dark`), điểm nhấn cam; giao diện có hai ngôn ngữ Anh và Việt qua module `apps/web/src/i18n` (từ điển có kiểu, không dùng thư viện i18n; lựa chọn lưu trong cookie `locale`, lần đầu theo ngôn ngữ trình duyệt), còn nội dung người dùng nhập thì giữ nguyên; trạng thái có text/icon cùng màu. [shadcn theming](https://ui.shadcn.com/docs/theming), [Tailwind theme](https://tailwindcss.com/docs/theme).
 - **CSS trong monorepo:** dùng map class literal cho status/priority, tránh bg-${status}; source React Bits phải nằm trong vùng Tailwind quét, khai báo @source nếu cấu hình cần. Kiểm tra CSS ở production build. [Tailwind source detection](https://tailwindcss.com/docs/detecting-classes-in-source-files).
 - **Motion:** React Bits cho entrance panel, heading text (ví dụ BlurText), chuyển nội dung và hover/focus nhẹ; duration đề xuất 150–250 ms, không chặn navigation/auth/error. Giữ nội dung thật và accessible name ổn định; không animate labels, validation hoặc chạy nền vô hạn. dnd-kit sở hữu transform trên draggable; decoration ở phần tử con, tắt hiệu ứng cạnh tranh trong lúc drag.
 - **Accessibility và lifecycle:** prefers-reduced-motion dùng CSS motion-reduce và JS fallback tĩnh cho hiệu ứng React Bits; keyboard/focus vẫn hoạt động. Không đọc window/random/time trong render đầu; khởi tạo browser APIs sau mount, cleanup timers/observers/RAF khi unmount/đổi scope; lazy-load hiệu ứng nặng theo nhu cầu, tránh import toàn bộ catalog. [Tailwind reduced motion](https://tailwindcss.com/docs/hover-focus-and-other-states#prefers-reduced-motion).
-- **Nghiệm thu FE bổ sung:** desktop/mobile, Tab/Escape/focus return, reduced motion, deadline ở timezone âm/dương, Table phân trang server và Kanban drag/status-menu; kiểm tra hydration, CSS và bundle production. Đây là tiêu chí trước code, chưa là kết quả kiểm thử.
+- **Nghiệm thu FE bổ sung:** desktop/mobile, Tab/Escape/focus return, reduced motion, deadline ở timezone âm/dương, Table phân trang server và Kanban drag/status-menu; kiểm tra hydration, CSS và bundle production. Typecheck, lint, 109 unit test web và production build đã chạy local; các kiểm tra trên trình duyệt (desktop/mobile, bàn phím, reduced motion, Lighthouse, hai browser) chưa chạy và vẫn là tiêu chí chờ nghiệm thu.
 
 ### Routes và nội dung
 
@@ -536,27 +540,31 @@ Chủ repo bổ sung **shadcn/ui + React Bits + Tailwind CSS** cho FE. Component
 | --- | --- |
 | /login | Email/password, link register, thông báo lỗi và loading |
 | /register | Email/password, displayName tùy chọn, validation |
-| /account/ai | Personal Gemini BYOK status, add/replace/delete key; available to every authenticated role, not workspace-scoped |
+| / | Chuyển hướng tới /workspaces; /workspaces/:wid chuyển tới dashboard |
+| /workspaces/:wid/ai-settings | Gemini key và model của chính user: thiết lập, đổi model, xóa; key chỉ gửi một lần, không hiển thị lại; mọi role dùng được, dữ liệu theo tài khoản chứ không theo workspace |
 | /workspaces | Workspace switcher/list, tạo workspace, onboarding nếu chưa có membership |
 | /workspaces/:wid/dashboard | Bốn cards đếm và upcoming theo workspace/team được phép xem |
 | /workspaces/:wid/teams/:tid/tasks | Board/list, search/filter/assignee, tạo/sửa task của team |
 | /workspaces/:wid/my-tasks | List task được giao cho mình trong các team được xem |
 | /workspaces/:wid/settings | Đổi tên, workspace members/roles, team management cho OWNER/ADMIN |
-| /workspaces/:wid/teams/:tid/planner/:pid | Input/progress/review/candidate/history/diff/confirm AI; state thật theo job/versions, không ghi task trước confirm |
+| /workspaces/:wid/teams/:tid/ai-planner | Danh sách plan của team và form nhập mục tiêu |
+| /workspaces/:wid/teams/:tid/ai-planner/:planId | Tiến trình job, câu hỏi làm rõ, draft chỉnh sửa, versions, xác nhận; state thật theo job/versions, không ghi task trước confirm |
 
 - Protected layout gọi `/api/auth/me`; 401 đưa về login. Backend vẫn tự kiểm tra trên mỗi request.
 - Sidebar: workspace switcher phân trang/role badge, Dashboard/My Tasks/teams được xem, personal AI settings cho mọi role, workspace Settings cho OWNER/ADMIN, logout; board dùng lại theo team. Role ADMIN ở A không cấp quyền B.
 - Quản lý membership dùng một trang/dialog chung: thêm workspace member qua email đã đăng ký, sau đó thêm team; OWNER có role selector. Trong workspace membership, ADMIN chỉ thêm/gỡ MEMBER; quản lý team membership theo ma trận quyền, bao gồm thêm OWNER/ADMIN vào team để giao việc.
 - Desktop có ba cột; mobile cho cuộn ngang hoặc chuyển list; mọi thao tác vẫn dùng được khi không kéo thả.
-- Card hiển thị title, assignee hoặc "Chưa giao", priority bằng text + màu, deadline và overdue indicator. Task DONE không mang nhãn quá hạn; form chọn assignee từ roster team có phân trang/tải thêm.
+- Card hiển thị title, assignee hoặc "Unassigned", priority bằng text + màu, deadline và overdue indicator. Task DONE không mang nhãn quá hạn; form chọn assignee từ roster team có phân trang/tải thêm.
 - Ẩn/disable action theo ma trận quyền để hỗ trợ UX; 403 từ API vẫn phải được xử lý. Khi membership bị gỡ, 404/403 dẫn tới tải lại workspace/team lists, không hiển thị dữ liệu cache cũ.
 - Có loading, empty thật, empty do filter, lỗi tải dữ liệu và session expired riêng; không biến lỗi mạng thành "chưa có task".
+- Realtime phía FE: một `EventSource` mỗi tab tới `GET /api/realtime/events?workspaceId=&cursor=`, mở khi đã vào một workspace. Sự kiện không mang dữ liệu để render; mỗi sự kiện chỉ báo cho invalidation bus màn hình nào phải refetch. Khi mất kết nối, code mở lại stream với backoff tăng dần (tối đa 30 giây); với `resync_required` bỏ cursor và tải lại mọi màn hình một lần; không có timer polling. Trạng thái kết nối hiển thị bằng `connection-indicator`.
+- AI Planner trên UI: key Gemini nhập ở trang AI settings; form mục tiêu có ba checkbox đồng ý bắt buộc (gửi dữ liệu tới Gemini, chịu billing của key, đã xem phần ngữ cảnh được chia sẻ) cùng tùy chọn chiến lược, mức chi tiết, ngày, và hai opt-in ngữ cảnh (task hiện có của team, thành viên team); sau đó là tiến trình job → câu hỏi làm rõ → draft chỉnh sửa được (versions, revise bằng AI, khóa field đã sửa tay, sửa phụ thuộc) → confirm một lần mới tạo task. Duplicate tạo bản sao plan trong cùng team vì API clone không nhận team đích. Phụ thuộc giữa các task thật sửa được trong dialog task.
 
 ### Data fetching và Kanban
 
 1. List dùng một request với các query, pagination; search debounce khoảng 300 ms. Đổi q/filter đặt lại page 1.
 2. Board trong một team có ba request theo status; mỗi cột có pagination và total riêng. Filter priority/q/assignee áp dụng cho cả ba cột; filter status chỉ hiển thị cột tương ứng. Dashboard cùng team không chạy theo các filter này.
-3. Mỗi cột hiển thị "đã tải N / total" và Tải thêm. Không tải một page chung rồi chia thành cột.
+3. Mỗi cột hiển thị "Showing N of total" và nút "Load more". Không tải một page chung rồi chia thành cột.
 4. Hủy/bỏ qua response của scope/search/filter cũ; state key bao gồm userId, workspaceId, teamId, q, status, priority, assigneeId và page. Đổi workspace/team xóa state cũ và reset pagination; logout clear mọi dữ liệu trong memory.
 5. Drag card sang cột khác optimistic update UI và PATCH chỉ status; trong khi pending khóa mutation khác trên cùng card.
 6. PATCH bị từ chối chắc chắn: khôi phục UI, thông báo lỗi. Timeout/mất response có thể đã ghi DB: refetch để xác nhận trước khi kết luận thất bại.
@@ -590,6 +598,7 @@ Mục tiêu cộng điểm chọn **integration tests** làm trọng tâm; khôn
 
 - Test DB riêng/migration thật, fixtures memberships/tasks xác định, fake clock; kiểm tra đúng một OWNER/không remove/demote; không reset demo/dev DB. AI CI dùng fake Gemini adapter, cases jobs/revoke/quota/versions/locks/DAG/confirm và live smoke riêng theo companion.
 - Cleanup/parallelism tránh xóa dữ liệu lẫn nhau; bắt đầu suite tuần tự. Unit date/validation không thay cases bằng % coverage; smoke auth → workspace/team/assign → filters/drag/dashboard/revoke/logout, hai browsers realtime/AI, mobile/lỗi mạng theo RT criteria.
+- Web có 109 unit test Vitest (API client, `use-resource`, `use-paged-list`, invalidation bus và event parsing, di chuyển status, auth provider, quyền, query URL, date-only, reducer và utils của planner); chưa có E2E trong trình duyệt.
 - Integration tests không chứng minh UI drag/drop chạy được; phải có bằng chứng smoke/demo riêng. E2E automation là hướng nâng cấp, không thêm stack bắt buộc trong hai ngày.
 
 ## 11. CI/CD: GitHub Actions → Docker Hub → Dokploy → VPS
@@ -598,35 +607,34 @@ Mục tiêu cộng điểm chọn **integration tests** làm trọng tâm; khôn
 
 ```mermaid
 flowchart LR
-    Git[Push hoặc PR] --> CI[GitHub Actions CI]
-    CI -->|main qua checks| Build[Build web API migrate images]
-    Build --> Hub[Docker Hub theo SHA và digest]
-    Hub -->|pull image| Deploy
-    CI -->|CD cập nhật manifest và gọi API| Deploy
+    Git[Push hoặc PR] --> CI[Backend CI và Web CI]
+    CI -->|main qua checks| Release[Backend Release và Web Release]
+    Release --> Hub[Docker Hub: sha-commit và latest]
+    Hub -->|pull khi bấm Deploy thủ công| Deploy
     subgraph VPS[VPS chạy Dokploy và ứng dụng]
         Deploy[Dokploy Compose] --> Migrate[One-shot migration]
         Migrate --> DB[(PostgreSQL named volume)]
-        Deploy --> Web[Next.js container]
-        Deploy --> API[Express container]
-        Edge[Traefik TLS] --> Web
-        Edge -->|exact SSE path| API
-        Web -->|REST rewrite| API
-    API --> DB
+        Deploy --> Web[Next.js container :4101]
+        Deploy --> API[Express container :4100]
+        API --> DB
+        Tunnel[cloudflared trên host] -->|task-api.darrenak.id.vn| API
+        Tunnel -->|task.darrenak.id.vn| Web
+        Web -->|/api/*| API
     end
     API -->|worker loop| Gemini[Gemini API]
-    Browser[Browser HTTPS] --> Edge
+    Browser[Browser HTTPS] --> Tunnel
 ```
 
-GitHub Actions là nền tảng thực hiện CI/CD; Docker Hub lưu images; Dokploy quản lý deploy/runtime trên VPS. Chọn Dokploy service **Docker Compose**, provider **Raw**, dùng docker-compose.prod.yml với image digests từ CI; VPS pull image đã build. Next chạy Node standalone; demo một web/API instance và DB bền vững. [Docker Actions](https://docs.docker.com/build/ci/github-actions/), [Dokploy providers](https://docs.dokploy.com/docs/core/providers).
+GitHub Actions kiểm tra và đẩy image; Docker Hub lưu images; Dokploy quản lý deploy/runtime trên VPS và chỉ chạy khi người vận hành bấm Deploy. Dokploy service là **Docker Compose** dùng docker-compose.prod.yml; VPS kéo image đã build, ref image đặt qua `BACKEND_API_IMAGE_REF`, `BACKEND_MIGRATE_IMAGE_REF`, `WEB_IMAGE_REF`. Next chạy Node standalone; demo một web/API instance và DB bền vững. [Docker Actions](https://docs.docker.com/build/ci/github-actions/), [Dokploy providers](https://docs.dokploy.com/docs/core/providers).
 
 | Vấn đề DevOps | Quyết định | Bằng chứng/đánh đổi |
 | --- | --- | --- |
 | Image khác local/CI | Root workspace build context, npm ci lockfile, cùng Node/libc/CPU target cho builder/runtime; Prisma generate lúc build, native Argon2 phải tương thích | Clean build/start Linux container; không copy node_modules từ macOS |
-| Next standalone thiếu files | Chọn output standalone; trace workspace root, copy public/.next/static và package files đã trace; chạy Node server | Images chạy không mount source; asset 200 và rewrite hoạt động |
+| Next standalone thiếu files | Chọn output standalone (`apps/web/Dockerfile` nhiều stage, chạy bằng user `node`); copy bản standalone, thư mục static và public; chạy `node apps/web/server.js` | Image chạy không mount source; trang `/login` trả 200 trong container non-root, filesystem chỉ đọc (đã kiểm tra local) |
 | Migration CLI bị prune | Release/migrate target giữ Prisma CLI và migrations; API runtime chỉ deps cần chạy | Job chạy được từ artifact, không dựa vào dev máy cá nhân |
 | Build đòi DB thật | Build không fetch protected data/seed/migrate; Prisma generate không phụ thuộc live demo DB | Build offline khỏi demo DB; CI dùng DB test cho tests riêng |
-| Secret lọt vào image | .dockerignore loại .env/.git/node_modules; DB/demo password chỉ runtime env; nếu build cần secret dùng BuildKit secret, không ARG secret | Kiểm tra image/layers/logs; chỉ API_UPSTREAM là cấu hình build không bí mật |
-| Quá nhiều proxy/IP spoof | Chỉ một public origin; preserve Cookie/Set-Cookie/Origin; edge tin cậy overwrite forwarding headers từ client; `TRUSTED_PROXY_CIDRS` chỉ chứa IP/CIDR chính xác của immediate peer mà Express nhìn thấy; rewrite một mình không đủ bảo đảm IP tin cậy | Gửi spoof X-Forwarded-For và gọi trực tiếp API public; limiter không được bỏ qua |
+| Secret lọt vào image | .dockerignore loại .env/.git/node_modules; DB/demo password chỉ runtime env; nếu build cần secret dùng BuildKit secret, không ARG secret | Kiểm tra image/layers/logs; image web không có biến trỏ tới API vì browser gọi đường dẫn tương đối |
+| Quá nhiều proxy/IP spoof | Chỉ một public origin; tunnel giữ Cookie/Set-Cookie/Origin; `TRUSTED_PROXY_CIDRS` chỉ chứa IP/CIDR chính xác của immediate peer mà Express nhìn thấy (gateway của network `edge`, `172.31.240.1` với subnet mặc định) | Gửi spoof X-Forwarded-For và gọi trực tiếp API public; limiter không được bỏ qua |
 | App healthy nhưng DB down | Live tách ready; ready probe hữu hạn; startup/deploy health gate; Compose dependency chỉ bảo đảm lúc khởi động | DB down/up: API trả lỗi rõ, hồi phục pool, không tự xóa volume |
 | Restart/scale làm mất dữ liệu | App stateless ngoài session DB; không ghi DB vào container layer; pool tổng theo số API instances | Restart app giữ session/tasks; nhiều instance cần đổi limiter memory trước scale |
 
@@ -641,9 +649,9 @@ Chỉ cấu hình `TRUSTED_PROXY_CIDRS` sau khi xác nhận IP/CIDR peer trực 
 Mục tiêu warm CRUD/list/dashboard p95 <500ms trên seed và khoảng 10 requests đồng thời; cold start/network/Argon2 đo riêng. Nếu vượt: xem query/lock/pool/event loop trước khi thêm cache hay dịch vụ. Log duration từng request và lỗi theo code, theo dõi ready status, 5xx, pool waits và slow queries bằng log/metrics sẵn có của platform; không thêm hệ thống monitoring riêng cho bài.
 ### Docker Compose
 
-- Local docker-compose.dev.yml có db/migrate/api và build từ source; docker-compose.prod.yml cùng services nhưng dùng images Docker Hub, PostgreSQL pin version/digest và named volume có tên ổn định.
-- pg_isready: migrate chờ DB healthy, API chờ migrate exit 0, web chờ API ready; started không là ready. [Docker Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/)
-- Build nhiều stage, app non-root, không bind API/DB public; seed tường minh sau migrations. README có build/up, seed, logs, stop và cảnh báo xóa volume làm mất dữ liệu.
+- Local docker-compose.dev.yml chỉ có db/migrate/api và build từ source (web chạy riêng bằng `npm run dev:web`); docker-compose.prod.yml thêm service `web`, dùng images Docker Hub, PostgreSQL pin version/digest và named volume có tên ổn định.
+- pg_isready: migrate chờ DB healthy, API chờ migrate exit 0; started không là ready. Service `web` không có `depends_on` và chỉ có healthcheck riêng (`/login`). [Docker Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/)
+- Build nhiều stage, app non-root, API/web chỉ publish trên loopback của host (`127.0.0.1:${API_HOST_PORT:-4100}` và `127.0.0.1:${WEB_HOST_PORT:-4101}`), DB không publish; seed tường minh sau migrations. README có build/up, seed, logs, stop và cảnh báo xóa volume làm mất dữ liệu.
 - Migration failure làm startup fail rõ ràng; không cho API chạy với schema cũ chưa tương thích.
 
 ### Biến môi trường
@@ -653,19 +661,21 @@ Mục tiêu warm CRUD/list/dashboard p95 <500ms trên seed và khoảng 10 reque
 | DATABASE_URL | API/migration/seed | PostgreSQL connection; secret |
 | APP_ORIGIN | API | Origin tin cậy chính xác, local hoặc HTTPS demo |
 | TRUSTED_PROXY_CIDRS | API runtime | Tùy chọn; danh sách IP/CIDR chính xác của các proxy trực tiếp được xác minh là peer của Express; không dùng wildcard hoặc dải bao phủ mọi địa chỉ |
-| API_UPSTREAM | Web build | http://api:4000, alias api ổn định trên private Compose network |
-| PORT | API | 4000, nội bộ Compose |
+| API_PROXY_TARGET | Web (build arg và dev server) | Nơi web server chuyển tiếp `/api/*`. Image cố định `http://api:4000` lúc build; dev server mặc định `http://localhost:4000` |
+| BACKEND_API_IMAGE_REF / BACKEND_MIGRATE_IMAGE_REF / WEB_IMAGE_REF | Dokploy Compose | Ref image Docker Hub bắt buộc; thường `<user>/task-management-api:latest`, `...-api-migrate:latest`, `...-web:latest`, hoặc tag `sha-<commit>` để ghim/rollback |
+| API_HOST_PORT / WEB_HOST_PORT / EDGE_SUBNET | Dokploy Compose | Cổng loopback của API (mặc định 4100) và web (mặc định 4101); subnet mạng `edge` (mặc định `172.31.240.0/29`) |
+| PORT | API/web | 4000 (API), 3000 (web), nội bộ container |
 | NODE_ENV | API/web | development/test/production |
-| RELEASE_SHA | API/web/migrate | Commit marker trong manifest; thay mỗi release để recreate migrate dù image digest không đổi |
+| APP_BUILD_SHA | API/web (build arg) | Commit của release; API trả lại qua header `X-Release-Sha` |
 | AI_ENABLED | API runtime | Công tắc vận hành để tắt AI toàn hệ thống khi cần; mặc định bật, nhưng AI unavailable nếu keyring/token caps sai hoặc thiếu. Không cấu hình Gemini key/model của user. |
 | CREDENTIAL_ENCRYPTION_KEYRING / CREDENTIAL_ENCRYPTION_ACTIVE_KEY_VERSION | API runtime trong Dokploy | Secret keyring AES-256-GCM có phiên bản; chỉ API đọc lúc chạy, không đưa vào web, image, build arg hoặc CI; giữ key version tương ứng với DB backup |
 | AI_MAX_INPUT_TOKENS / AI_MAX_OUTPUT_TOKENS | API runtime | Token ceiling của dịch vụ; bắt buộc để AI hoạt động, không chọn model hoặc provider key |
-| SEED_DEMO_ENABLED | Seed | Bật chủ động tạo dữ liệu giả |
-| DEMO_PASSWORD | Seed | Mật khẩu cho các persona demo qua env; không dùng lại ở nơi khác |
+| SEED_DEMO_DATA | Seed | Phải đặt `yes` thì seed mới chạy; bật chủ động tạo dữ liệu giả |
+| SEED_DEMO_PASSWORD | Seed | Mật khẩu 8–128 ký tự cho các persona demo qua env; không dùng lại ở nơi khác |
 
 Session TTL và business timezone là hằng số mục 5/7, không cần biến env cho mọi thông số. Password hashing không cần session signing secret vì cookie chứa token ngẫu nhiên và DB lưu hash.
 
-Rewrites lấy upstream khi build cấu hình web: set `API_UPSTREAM` trước build và rebuild nếu đổi upstream. Browser chỉ biết `/api`; không cần expose upstream/database qua NEXT_PUBLIC_*.
+Web không cần biến môi trường runtime trỏ tới API: browser chỉ biết đường dẫn `/api`, và web server chuyển tiếp `/api/*` tới API theo địa chỉ đã cố định lúc build (container) hoặc `API_PROXY_TARGET` (dev server).
 
 Tạo `.env.example` có placeholder; verify missing env lúc startup; tách local/test/demo. Runtime secrets ở Dokploy Environment, compose phải ánh xạ environment từng service; không tự đưa toàn bộ .env vào web. [Dokploy Compose env](https://docs.dokploy.com/docs/core/docker-compose#environment).
 
@@ -673,32 +683,33 @@ GitHub Actions chỉ dùng environment secrets DOCKERHUB_USERNAME/DOCKERHUB_PASS
 
 ### GitHub Actions
 
-- **CI:** push main/dev/feature/* và pull_request trên fork; npm ci theo Node/lockfile → lint/typecheck → PostgreSQL test healthy → migrate test DB → integration tests → build API/web. Jobs độc lập có thể song song; tests phụ thuộc DB/migration, không dùng demo secrets.
-- **CD mặc định:** chỉ push main của repo làm bài sau checks thành công; workflow_dispatch có thể deploy lại release đã kiểm tra. dev tích hợp và feature/* chỉ CI, chưa tạo staging DB/domain riêng. PR vào repo gốc vẫn theo mục 14.
-- **Publish:** official docker/login-action, setup-buildx-action, build-push-action pin SHA; build ba targets web/api/migrate theo CPU VPS, push `<namespace>/tms-{web,api,migrate}:sha-<commit>`. Lưu digest từng image và compose manifest cùng commit làm release metadata; không deploy latest hoặc retag SHA đã phát hành.
-- **Deploy:** thủ công. Sau khi images push thành công (tag `sha-<commit>` và `latest`), người vận hành bấm Deploy trong Dokploy; compose dùng `pull_policy: always` nên kéo `latest` mới. Workflow không gọi Dokploy API và không đọc/ghi env runtime. Sau deploy kiểm tra health/smoke và `X-Release-Sha` đúng commit; rollback bằng cách đặt image ref về tag `sha-<commit>` hoặc digest cũ rồi deploy lại.
+- **CI:** hai workflow độc lập. `backend-ci.yml` chạy khi PR hoặc push vào dev/main: PostgreSQL service, migrate, integration test với fake Gemini, audit, lint, typecheck, build và hai Docker build. `web-ci.yml` chạy cùng sự kiện nhưng lọc theo path (`apps/web/**`, lockfile, `package.json`, `tsconfig.base.json`, `eslint.config.js`, `.node-version`, `.dockerignore`, hai file workflow web): `npm audit --omit=dev --audit-level=high`, eslint, typecheck, test, production build, rồi build container (`--target web`). Không workflow nào dùng secret production.
+- **Release:** không có CD tự động. `backend-release.yml` và `web-release.yml` chạy bằng `workflow_run` sau khi CI tương ứng thành công trên push vào `main`, trong environment `production`, serialize, từ chối commit không còn là HEAD của `main`. Chưa có staging DB/domain riêng. PR vào repo gốc vẫn theo mục 14.
+- **Publish:** login Docker Hub bằng `DOCKERHUB_USERNAME`/`DOCKERHUB_PASSWORD`, buildx pin SHA, `linux/amd64`; push `<user>/task-management-api`, `<user>/task-management-api-migrate` và `<user>/task-management-web` (với tài khoản hiện tại: `ngothanhdatak/task-management-web`), mỗi image gắn `sha-<commit>` và `latest`. Digest được ghi vào Actions summary; không retag SHA đã phát hành.
+- **Deploy:** thủ công. Sau khi images push thành công (tag `sha-<commit>` và `latest`), người vận hành bấm Deploy trong Dokploy; compose dùng `pull_policy: always` nên kéo `latest` mới. Workflow không gọi Dokploy API và không đọc/ghi env runtime. Lần đầu cần đặt `WEB_IMAGE_REF` trong Dokploy. Sau deploy kiểm tra health/smoke và `X-Release-Sha` của API đúng commit; rollback bằng cách đặt image ref về tag `sha-<commit>` hoặc digest cũ rồi deploy lại (web: đặt `WEB_IMAGE_REF`, API không bị ảnh hưởng).
 - **Concurrency:** CI hủy run cũ theo branch; toàn bộ publish/update/deploy/recovery cùng môi trường serialize với cancel-in-progress=false, bao gồm deploy thủ công. Trước deploy kiểm tra main HEAD/commit ancestry để chặn release cũ, không so thứ tự chuỗi SHA; rollback là thao tác riêng, migration không bị auto cancel.
 - **Security:** permissions contents:read, Actions pin SHA; publish/deploy secrets chỉ cho trusted main/environment, không dùng pull_request_target chạy code PR chưa tin cậy. Cache dependencies; log redaction, kiểm tra FE imports/OpenAPI/native build. [GitHub Actions secure use](https://docs.github.com/en/actions/reference/security/secure-use)
-- Không seed/reset demo hoặc gọi Gemini tự động mỗi release/CI; web build đúng upstream, đổi phải rebuild. Health/smoke đúng images; live AI smoke có chủ ý khi bàn giao, fake provider cho CI.
+- Không seed/reset demo hoặc gọi Gemini tự động mỗi release/CI. Health/smoke đúng images; live AI smoke có chủ ý khi bàn giao, fake provider cho CI.
 
 ## 12. Triển khai demo
 
 ### Topology Dokploy trên VPS đã chọn
 
-- Dokploy quản lý một Compose project cho bài; web/API/migrate dùng images từ Docker Hub. Chốt VPS CPU/RAM/disk, domain/DNS, Docker Hub namespace và quyền Dokploy đầu ngày 1; dành RAM/disk cho DB, Dokploy và image cũ. Kết nối registry/pull cần được kiểm tra trên VPS. [Dokploy registry](https://docs.dokploy.com/docs/core/registry).
-- DNS demo trỏ VPS; Dokploy/Traefik HTTPS tới web:3000; exact SSE path priority cao tới api:4000 cùng host. Web/API tham gia edge + private app network; db/migrate private, API không published host port hoặc domain catch-all. Preview Compose kiểm tra labels/networks/priority/api alias theo [realtime topology](ai-and-realtime-technical-design.md#152-luồng-và-topology). [Dokploy Compose domains](https://docs.dokploy.com/docs/core/docker-compose/domains).
+- Dokploy quản lý một Compose project cho bài; web/API/migrate dùng images từ Docker Hub. Dokploy cần quyền đọc repo Docker Hub riêng; dành RAM/disk cho DB, Dokploy và image cũ. Kết nối registry/pull cần được kiểm tra trên VPS. [Dokploy registry](https://docs.dokploy.com/docs/core/registry).
+- Server chạy Dokploy không có Traefik; `cloudflared` chạy trên host (systemd). Compose chỉ publish API tại `127.0.0.1:4100` và web tại `127.0.0.1:4101`; db/migrate nằm trên network `backend` nội bộ, API và web nằm thêm trên network `edge` có subnet cố định. Public origin là `https://task.darrenak.id.vn`, `APP_ORIGIN` của API giữ nguyên giá trị đó.
+- Cloudflare Tunnel có hai public hostname: `task.darrenak.id.vn` → `http://localhost:4101` (web) và `task-api.darrenak.id.vn` → `http://localhost:4100` (API: Swagger, health, gọi trực tiếp). Browser chỉ nói chuyện với hostname web; web server chuyển tiếp `/api/*` (REST và SSE) tới service `api` qua network `edge`, nên cookie là first-party và API không cần CORS. `TRUSTED_PROXY_CIDRS` phải bao cả subnet `edge` vì request đến Express từ container web. Hostname do người vận hành cấu hình trên dashboard Cloudflare; repo không quản lý và chưa có bằng chứng đã cấu hình. Chi tiết ở [runbook](../03-operations/backend-operations-runbook.md#web-and-cloudflare-tunnel). Cần xác minh sau deploy: SSE `/api/realtime/events` đi qua web server và tunnel vẫn giữ mở quá thời gian timeout REST, và cookie được giữ nguyên.
 - Dokploy admin/API có HTTPS, giới hạn quyền truy cập; DB named volume giữ tên/project ổn định, không freshVolumes, down -v hoặc đổi tên volume khi redeploy. Giữ artifacts trước để rollback, dọn image có kiểm soát; không xóa image đang dùng. VPS đơn là điểm lỗi chung, Compose có thể gián đoạn ngắn; chưa cam kết zero downtime/HA.
 
 ### Quy trình release
 
-1. Chuẩn bị Dokploy/registry/env/volume/domain; kiểm tra HTTPS, upstream và APP_ORIGIN. Backup DB trước migration; CD chỉ tiếp tục khi backup thành công.
-2. CI xanh → build/push ba images → lưu SHA/digests → bấm Deploy thủ công trong Dokploy; không build lại trên VPS.
-3. Mỗi release phải recreate one-shot migrate bằng image đã publish và RELEASE_SHA mới, chạy prisma migrate deploy; DB healthy → migrate exit 0 → API ready → web. Không tái sử dụng exit 0 trước dù digest không đổi; kiểm chứng hành vi Dokploy/Compose bản cài đặt. Migration lỗi dừng rollout app mới; phiên bản cũ phải tương thích thay đổi additive.
+1. Chuẩn bị Dokploy/registry/env/volume/domain và hai rule tunnel; kiểm tra HTTPS và APP_ORIGIN. Backup DB trước migration; chỉ deploy tiếp khi backup thành công.
+2. CI xanh → release workflow đẩy images và ghi digest → bấm Deploy thủ công trong Dokploy; không build lại trên VPS.
+3. Mỗi lần Deploy phải chạy lại one-shot migrate bằng image đã publish (`pull_policy: always`, `restart: "no"`), chạy prisma migrate deploy; DB healthy → migrate exit 0 → API ready. Không tái sử dụng exit 0 trước dù digest không đổi; kiểm chứng hành vi Dokploy/Compose bản cài đặt. Migration lỗi dừng rollout app mới; phiên bản cũ phải tương thích thay đổi additive.
 4. Smoke public auth/workspace/team/CRUD/drag/dashboard/logout/isolation; AI live goal giả → stages/version/checklist/advanced → confirm → Board, replay không trùng; chưa live AI smoke không đánh dấu full AI đạt.
 5. Restart dịch vụ, kiểm tra dữ liệu vẫn còn; kiểm tra health endpoints, Swagger, log redaction.
 6. Seed chỉ lần đầu/chủ động; ghi demo URL, SHA/digests triển khai và giới hạn vào README; quay video sau khi dữ liệu ổn định. Workflow xanh chỉ chứng minh images đã publish; release chỉ coi là xong sau khi deploy thủ công và health/smoke đạt.
 
-Rollback app chỉ khi migration đã thành công/schema được xác minh: từ manifest hiện tại thay web/API bằng digests release trước, giữ DB/volume/migration target hiện tại, deploy cùng release lock rồi smoke. Code cũ phải tương thích schema; không rollback DB tự động hoặc dùng migration image cũ để down migration. Migration thất bại phải dừng, kiểm tra/repair hoặc restore DB riêng và reconcile migration state dưới release lock trước deploy lại; không dùng app rollback để vượt gate lỗi. Push/pull/API/deploy/smoke lỗi fail CD, không retry mù. [Prisma v7 migration errors](https://www.prisma.io/docs/orm/v7/reference/error-reference#p3009).
+Rollback app chỉ khi migration đã thành công/schema được xác minh: từ manifest hiện tại thay web/API bằng digests release trước, giữ DB/volume/migration target hiện tại, deploy cùng release lock rồi smoke. Code cũ phải tương thích schema; không rollback DB tự động hoặc dùng migration image cũ để down migration. Migration thất bại phải dừng, kiểm tra/repair hoặc restore DB riêng và reconcile migration state dưới release lock trước deploy lại; không dùng app rollback để vượt gate lỗi. Push/pull/deploy/smoke lỗi thì dừng và điều tra, không retry mù. [Prisma v7 migration errors](https://www.prisma.io/docs/orm/v7/reference/error-reference#p3009).
 
 ### Backup, restore và vận hành khi lỗi
 
@@ -776,7 +787,7 @@ Dùng các quyết định ở mục 4 (BE), 6–7 (DB/quyền), 9 (FE) và 11�
 | Dependency/API thay đổi | Đọc docs đúng version, pin lockfile/images, dùng cùng runtime ở CI/local/demo |
 | Public demo bị chỉnh sửa dữ liệu | Chỉ dữ liệu giả; seed/reset bằng thao tác có chủ ý trước buổi demo |
 
-Thiết kế gồm workspace/team, FE UI stack, Dokploy/VPS và **full Gemini planner + realtime không polling** theo yêu cầu. Backend code đã được triển khai và kiểm chứng local; frontend, phát hành Docker Hub/Dokploy/VPS, public browser SSE và live Gemini vẫn cần nghiệm thu theo môi trường thật. Kế hoạch triển khai và acceptance evidence được theo dõi riêng trong backend plan.
+Thiết kế gồm workspace/team, FE UI stack, Dokploy/VPS và **full Gemini planner + realtime không polling** theo yêu cầu. Backend và web đã được triển khai và kiểm chứng local (typecheck, lint, test, production build, build và khởi động image web, smoke API qua proxy dev). Chưa nghiệm thu: kiểm tra trên trình duyệt (kể cả hai browser realtime, mobile, bàn phím, reduced motion, Lighthouse), live Gemini (do người dùng tự chạy với key của mình), chạy GitHub workflows, đẩy image lên Docker Hub, deploy Dokploy, rule Cloudflare Tunnel và SSE qua tunnel. Kế hoạch triển khai và acceptance evidence được theo dõi riêng trong thư mục `plans/`; bảng đối chiếu từng ID ở [PRD traceability](../01-requirements/prd-traceability.md).
 
 ## 16. Tài liệu tham khảo
 

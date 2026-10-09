@@ -1,0 +1,57 @@
+name: Web CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - apps/web/**
+      - package.json
+      - package-lock.json
+      - tsconfig.base.json
+      - eslint.config.js
+      - .node-version
+      - .dockerignore
+      - .github/workflows/web-ci.yml
+      - .github/workflows/web-release.yml
+  push:
+    branches: [dev, main]
+    paths:
+      - apps/web/**
+      - package.json
+      - package-lock.json
+      - tsconfig.base.json
+      - eslint.config.js
+      - .node-version
+      - .dockerignore
+      - .github/workflows/web-ci.yml
+      - .github/workflows/web-release.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm install --global npm@11.14.1
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npx eslint apps/web/src
+      - run: npm run --workspace @task-management/web typecheck
+      - run: npm run --workspace @task-management/web test
+      - run: npm run --workspace @task-management/web build
+
+  container-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: docker build --file apps/web/Dockerfile --target web --tag task-management-web:ci .

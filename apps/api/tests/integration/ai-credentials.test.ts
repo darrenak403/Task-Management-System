@@ -493,6 +493,30 @@ describe('account-scoped Gemini BYOK vault', () => {
     expect(after.body.data.configured).toBe(false);
   });
 
+  it('tests the stored key against the saved model without changing the credential', async () => {
+    const cookie = await register('tester@example.com');
+    const secretKey = 'fake-gemini-key-ConnectionTestCredential-1234567890';
+    const unconfigured = await request(app).post(`${credentialPath}/test`).set('Origin', trustedOrigin).set('Cookie', cookie);
+    await request(app).put(credentialPath).set('Origin', trustedOrigin).set('Cookie', cookie).send({ model: 'gemini-test-model', key: secretKey });
+    const before = await prisma.userGeminiCredential.findFirst();
+    abortedUserIds.length = 0;
+
+    const response = await request(app).post(`${credentialPath}/test`).set('Origin', trustedOrigin).set('Cookie', cookie);
+    const after = await prisma.userGeminiCredential.findFirst();
+    const anonymous = await request(app).post(`${credentialPath}/test`).set('Origin', trustedOrigin);
+
+    expect(unconfigured.status).toBe(409);
+    expect(unconfigured.body.error.code).toBe('AI_CREDENTIAL_REQUIRED');
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({ configured: true, model: 'gemini-test-model', credentialRevision: before?.credentialRevision });
+    expect(JSON.stringify(response.body)).not.toContain(secretKey);
+    expect(after?.ciphertext).toEqual(before?.ciphertext);
+    expect(verifiedKeys).toEqual([secretKey, secretKey]);
+    expect(verifiedModels).toEqual(['gemini-test-model', 'gemini-test-model']);
+    expect(abortedUserIds).toEqual([]);
+    expect(anonymous.status).toBe(401);
+  });
+
   it('keeps the credential unchanged when validation is temporarily unavailable', async () => {
     const cookie = await register('owner@example.com');
     const initial = await request(app)

@@ -116,6 +116,9 @@ export const openApiDocument = {
       patch: operation({ id: 'updateGeminiModel', summary: 'Verify and update the current account Gemini model', requestSchema: 'UpdateGeminiModelRequest', responseSchema: 'GeminiCredentialMetadataResponse', tags: ['Credentials'] }),
       delete: operation({ id: 'deleteGeminiCredential', summary: 'Delete the app copy of the current account key', successCode: '204', successDescription: 'Credential removed from this application.', tags: ['Credentials'] }),
     },
+    '/me/ai-provider-credentials/gemini/test': {
+      post: operation({ id: 'testGeminiCredential', summary: 'Check that the stored Gemini key still reaches the saved model', responseSchema: 'GeminiCredentialMetadataResponse', tags: ['Credentials'] }),
+    },
     '/workspaces': {
       get: operation({ id: 'listWorkspaces', summary: 'List workspaces the current user belongs to', parameters: pageParameters, responseSchema: 'WorkspaceListResponse', tags: ['Workspaces'] }),
       post: operation({ id: 'createWorkspace', summary: 'Create a workspace and its owner membership atomically', successCode: '201', requestSchema: 'WorkspaceNameRequest', responseSchema: 'WorkspaceResponse', tags: ['Workspaces'] }),
@@ -127,6 +130,9 @@ export const openApiDocument = {
     '/workspaces/{workspaceId}/members': {
       get: operation({ id: 'listWorkspaceMembers', summary: 'List the workspace roster; owner/admin only', parameters: [workspaceId, ...pageParameters], responseSchema: 'WorkspaceMemberListResponse', tags: ['Workspaces'] }),
       post: operation({ id: 'addWorkspaceMember', summary: 'Add an existing account as a workspace member', successCode: '201', parameters: [workspaceId], requestSchema: 'AddWorkspaceMemberRequest', responseSchema: 'WorkspaceMemberResponse', tags: ['Workspaces'] }),
+    },
+    '/workspaces/{workspaceId}/member-candidates': {
+      get: operation({ id: 'listWorkspaceMemberCandidates', summary: 'List up to 20 accounts that can be added to the workspace; owner/admin only', parameters: [workspaceId, { name: 'search', in: 'query', required: false, schema: { type: 'string', maxLength: 100 } }], responseSchema: 'MemberCandidateListResponse', tags: ['Workspaces'] }),
     },
     '/workspaces/{workspaceId}/members/{userId}': {
       patch: operation({ id: 'changeWorkspaceMemberRole', summary: 'Set ADMIN or MEMBER role; owner only', parameters: [workspaceId, userId], requestSchema: 'WorkspaceRoleRequest', responseSchema: 'WorkspaceMemberResponse', tags: ['Workspaces'] }),
@@ -278,6 +284,7 @@ export const openApiDocument = {
       AddTeamMemberRequest: { type: 'object', additionalProperties: false, required: ['userId'], properties: { userId: { type: 'string', format: 'uuid' } } },
       PageMeta: { type: 'object', required: ['page', 'pageSize', 'total', 'totalPages'], properties: { page: { type: 'integer' }, pageSize: { type: 'integer' }, total: { type: 'integer' }, totalPages: { type: 'integer' } } },
       WorkspaceListResponse: { type: 'object', required: ['data', 'meta'], properties: { data: { type: 'array', items: ref('WorkspaceDto') }, meta: ref('PageMeta') } },
+      MemberCandidateListResponse: { type: 'object', required: ['data'], properties: { data: { type: 'array', items: ref('UserDto') } } },
       WorkspaceMemberListResponse: { type: 'object', required: ['data', 'meta'], properties: { data: { type: 'array', items: ref('WorkspaceMemberDto') }, meta: ref('PageMeta') } },
       TeamListResponse: { type: 'object', required: ['data', 'meta'], properties: { data: { type: 'array', items: ref('TeamDto') }, meta: ref('PageMeta') } },
       UserListResponse: { type: 'object', required: ['data', 'meta'], properties: { data: { type: 'array', items: ref('TeamMemberDto') }, meta: ref('PageMeta') } },
@@ -302,7 +309,7 @@ export const openApiDocument = {
       UpdateGeminiModelRequest: { type: 'object', additionalProperties: false, required: ['model'], properties: { model: { type: 'string', minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$' } } },
       GeminiCredentialMetadata: { type: 'object', required: ['configured', 'model', 'verifiedAt', 'credentialRevision'], properties: { configured: { type: 'boolean' }, model: { type: ['string', 'null'] }, verifiedAt: { type: ['string', 'null'], format: 'date-time' }, credentialRevision: { type: ['string', 'null'], format: 'uuid' } } },
       GeminiCredentialMetadataResponse: { type: 'object', required: ['data'], properties: { data: ref('GeminiCredentialMetadata') } },
-      AiPlannerStatus: { type: 'object', required: ['available', 'model', 'credentialRequired', 'unavailableReason'], properties: { available: { type: 'boolean' }, model: { type: ['string', 'null'] }, credentialRequired: { type: 'boolean' }, unavailableReason: { type: ['string', 'null'], enum: ['disabled', 'invalid_configuration', 'restore_quarantine', 'credential_required', 'model_required', null] } } },
+      AiPlannerStatus: { type: 'object', required: ['available', 'model', 'credentialRequired', 'dailyUsage', 'unavailableReason'], properties: { dailyUsage: { type: 'object', description: "The signed-in user's AI operations today (Asia/Ho_Chi_Minh day) against their daily limit, and how many provider calls one request may make.", required: ['used', 'limit', 'attemptsPerRequest'], properties: { used: { type: 'integer' }, limit: { type: 'integer' }, attemptsPerRequest: { type: 'integer' } } }, available: { type: 'boolean' }, model: { type: ['string', 'null'] }, credentialRequired: { type: 'boolean' }, unavailableReason: { type: ['string', 'null'], enum: ['disabled', 'invalid_configuration', 'restore_quarantine', 'credential_required', 'model_required', null] } } },
       AiPlannerStatusResponse: { type: 'object', required: ['data'], properties: { data: ref('AiPlannerStatus') } },
       CreateAiPlanRequest: {
         type: 'object', additionalProperties: false, required: ['requestKey', 'goal', 'consent'],

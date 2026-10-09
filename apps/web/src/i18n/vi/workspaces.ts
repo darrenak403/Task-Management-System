@@ -1,0 +1,63 @@
+import type { workspaces as source } from '../en/workspaces';
+
+export const workspaces: typeof source = {
+  unavailable: 'Workspace này không khả dụng. Có thể bạn không còn quyền truy cập.',
+  loading: 'Đang tải workspace',
+  roleOf: (name) => `Vai trò của ${name}`,
+  addMember: {
+    userNotFound: 'Chưa có tài khoản nào dùng email này. Hãy nhờ họ đăng ký trước.',
+    alreadyMember: 'Người này đã là thành viên của workspace.',
+    added: (email) => `Đã thêm ${email} làm thành viên`,
+    title: 'Thêm thành viên',
+    description: 'Chọn một người bên dưới hoặc nhập email. Họ tham gia với vai trò Thành viên và chỉ thấy các nhóm được thêm vào.',
+    field: 'Tên hoặc email',
+    placeholder: 'Tìm người',
+    candidates: 'Những người có thể thêm',
+    loadFailed: 'Không tải được danh sách. Bạn vẫn có thể thêm bằng email.',
+    noMatch: 'Không tìm thấy ai. Hãy nhờ họ đăng ký trước.',
+    everyoneAdded: 'Mọi tài khoản đều đã ở trong workspace này.',
+    adding: 'Đang thêm…',
+    submit: 'Thêm thành viên',
+  },
+  create: {
+    title: 'Tạo workspace',
+    description: 'Workspace gom các nhóm và công việc của nhóm. Bạn sẽ là chủ sở hữu.',
+    created: 'Đã tạo workspace',
+  },
+  members: {
+    roleChanged: (name, role) => `${name} giờ là ${role}`,
+    removed: (name) => `Đã gỡ ${name} khỏi workspace`,
+    role: 'Vai trò',
+    you: '(bạn)',
+    count: (total) => `${total} người trong workspace này`,
+    removeTitle: (name) => `Gỡ ${name}?`,
+    removeTitleGeneric: 'Gỡ thành viên?',
+    removeDescription: 'Họ mất quyền truy cập workspace và mọi nhóm trong đó ngay lập tức. Công việc đang giao cho họ sẽ trở thành chưa giao.',
+    removeConfirm: 'Gỡ thành viên',
+  },
+  rename: {
+    renamed: 'Đã đổi tên workspace',
+    title: 'Tên workspace',
+    description: 'Hiển thị ở sidebar và bộ chuyển workspace cho mọi thành viên.',
+  },
+  settings: {
+    restrictedTitle: 'Chỉ chủ sở hữu và quản lý mới vào được Cài đặt',
+    restrictedMessage: 'Hãy nhờ chủ sở hữu hoặc quản lý của workspace nếu cần thay đổi gì ở đây.',
+    description: (workspace) => `Quản lý ${workspace}, thành viên và các nhóm.`,
+    general: 'Chung',
+    members: 'Thành viên',
+    teams: 'Nhóm',
+  },
+  switcher: {
+    select: 'Chọn workspace',
+    none: 'Chưa chọn workspace',
+    loadFailed: 'Không tải được. Thử lại',
+    all: 'Tất cả workspace',
+  },
+  page: {
+    newWorkspace: 'Workspace mới',
+    description: 'Chọn một workspace để mở, hoặc tạo mới.',
+    firstTitle: 'Tạo workspace đầu tiên',
+    firstMessage: 'Bạn chưa là thành viên của workspace nào. Hãy tạo một workspace để thêm nhóm và bắt đầu theo dõi công việc.',
+  },
+};
