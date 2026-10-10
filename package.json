@@ -20,6 +20,7 @@
     "dev:web": "npm --workspace @task-management/web run dev",
     "build": "npm --workspace @task-management/api run build && npm --workspace @task-management/web run build",
     "lint": "eslint apps/api/src apps/api/tests apps/web/src",
+    "lint:web": "eslint apps/web/src",
     "typecheck": "npm --workspace @task-management/api run typecheck && npm --workspace @task-management/web run typecheck",
     "test": "npm --workspace @task-management/api run test && npm --workspace @task-management/web run test",
     "docker:dev:up": "docker compose -f docker-compose.dev.yml up --build -d",

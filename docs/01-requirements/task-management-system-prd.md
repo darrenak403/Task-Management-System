@@ -8,7 +8,7 @@
 | Phiên bản | 1.0 — baseline trước khi code |
 | Ngày chốt scope | 2026-10-09 |
 | Trạng thái | Yêu cầu đã thống nhất; chưa có implementation evidence |
-| Nguồn đề bài | [README pre-test ở repo root](../../README.md) |
+| Nguồn đề bài | [Đề bài tuyển dụng](assignment-brief.md) |
 | Đặc tả phân hệ AI | [AI Smart Task Planner PRD](ai-smart-task-planner-prd.md) |
 
 ## 1. Mục tiêu sản phẩm

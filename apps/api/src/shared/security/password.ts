@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 
 // A fixed dummy hash keeps unknown-account login attempts on the Argon2 verification path.
-const DUMMY_PASSWORD_HASH =
+const DUMMY_VERIFICATION_HASH =
   '$argon2id$v=19$m=19456,p=1,t=2$dIHEMOSmeUgGHb4tLzPASA$ZG9BOXvqTCkvp7aJ2A87AIi8+BGHAROAo+eEyk+3RIQ';
 
 export function hashPassword(password: string): Promise<string> {
@@ -16,7 +16,7 @@ export function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(passwordHash: string | null, password: string): Promise<boolean> {
   try {
-    return await argon2.verify(passwordHash ?? DUMMY_PASSWORD_HASH, password) && passwordHash !== null;
+    return await argon2.verify(passwordHash ?? DUMMY_VERIFICATION_HASH, password) && passwordHash !== null;
   } catch {
     return false;
   }
