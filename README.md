@@ -132,9 +132,35 @@ Một task có trạng thái, ưu tiên, người thực hiện, hạn chót và
 
 ![Hộp thoại sửa task](images/screenshots/task-detail.png)
 
+### Việc của tôi
+
+Mọi task được giao cho người đang đăng nhập, gộp từ các team trong workspace.
+
+![Trang Việc của tôi](images/screenshots/my-tasks.png)
+
 ### Thành viên
 
 ![Trang thành viên của workspace](images/screenshots/members.png)
+
+### AI Planner
+
+**Bước 1 — Nhập mục tiêu.** Chọn mức chi tiết, chiến lược và ngữ cảnh gửi kèm. Trang hiện số lượt AI còn lại trong ngày.
+
+![Biểu mẫu tạo kế hoạch AI](images/screenshots/ai-planner-goal.png)
+
+**Bước 2 — Trả lời câu hỏi làm rõ.** Khi mục tiêu còn thiếu thông tin, AI hỏi lại trước khi lập kế hoạch.
+
+![Câu hỏi làm rõ của AI](images/screenshots/ai-planner-questions.png)
+
+**Bước 3 — Xem bản nháp và xác nhận.** Mỗi task có ưu tiên, ước lượng thời gian và task phải xong trước. Chọn, sửa rồi bấm xác nhận thì task mới được tạo trong team.
+
+![Bản nháp kế hoạch do AI đề xuất](images/screenshots/ai-planner-draft.png)
+
+### Cài đặt AI
+
+Mỗi người nhập Gemini API key của riêng mình. Key được mã hoá phía server và không hiển thị lại.
+
+![Trang cài đặt AI](images/screenshots/ai-settings.png)
 
 ## 6. Phân quyền
 
