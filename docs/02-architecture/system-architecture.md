@@ -2,7 +2,7 @@
 
 ## 1. Bối cảnh và trạng thái
 
-- Nguồn: [đề bài tuyển dụng](../../README.md); vai trò Fullstack, thời hạn **2 ngày**.
+- Nguồn: [đề bài tuyển dụng](../01-requirements/assignment-brief.md); vai trò Fullstack, thời hạn **2 ngày**.
 - Phạm vi đã xác nhận: **workspace → team → task**, team có thành viên/quyền riêng; MVP, **6 mục cộng điểm** và **AI Smart Task Planner toàn bộ MVP + nâng cao**, Gemini BYOK theo tài khoản, subtask checklist và **realtime không polling**.
 - Kiến trúc được chọn: **Next.js frontend + Express backend riêng**, TypeScript, PostgreSQL và Prisma, xác nhận ngày 09/10/2026.
 - Tài liệu thiết kế gốc, đã được cập nhật theo backend và web hiện có trong repo; checklist mục 14 là tiêu chí cần hoàn thành, chưa phải kết quả nghiệm thu. Đối chiếu từng ID với code và bằng chứng nằm ở [PRD traceability](../01-requirements/prd-traceability.md). Giới hạn trường, deadline, session và phân trang là quyết định cho phần đề bài chưa quy định.
@@ -793,4 +793,4 @@ Thiết kế gồm workspace/team, FE UI stack, Dokploy/VPS và **full Gemini pl
 
 Các link ở từng mục là nguồn chính thức cho cơ chế kỹ thuật. Giới hạn trường, TTL, cửa sổ deadline, số trang và lịch hai ngày là quyết định riêng của dự án.
 
-- [Đề bài gốc trong repo](../../README.md); [Next.js self-hosting](https://nextjs.org/docs/app/guides/self-hosting); [dnd-kit official documentation](https://dndkit.com/)
+- [Đề bài gốc trong repo](../01-requirements/assignment-brief.md); [Next.js self-hosting](https://nextjs.org/docs/app/guides/self-hosting); [dnd-kit official documentation](https://dndkit.com/)
