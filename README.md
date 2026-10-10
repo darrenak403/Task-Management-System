@@ -276,8 +276,10 @@ Tài liệu thiết kế: [PRD](docs/01-requirements/task-management-system-prd.
 
 ## 11. Video demo
 
-Clip dài khoảng 90 giây, quay trên bản demo, có phụ đề cho từng cảnh: đăng nhập, dashboard, danh sách task (tìm kiếm, lọc, phân trang), Kanban kéo thả, chi tiết task, việc của tôi, thành viên, AI Planner và cài đặt AI.
+Clip dài khoảng 90 giây, quay trên bản demo, có nhạc nền và phụ đề cho từng cảnh: đăng nhập, dashboard, danh sách task (tìm kiếm, lọc, phân trang), Kanban kéo thả, chi tiết task, việc của tôi, thành viên, AI Planner và cài đặt AI.
 
 [![Xem video demo](images/demo/taskflow-demo-cover.png)](images/demo/taskflow-demo.mp4)
 
 Bấm vào ảnh để mở video, hoặc tải trực tiếp tệp [taskflow-demo.mp4](images/demo/taskflow-demo.mp4).
+
+Nhạc nền: "Carefree" của Kevin MacLeod ([incompetech.com](https://incompetech.com)), giấy phép [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
