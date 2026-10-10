@@ -39,10 +39,10 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-      - run: npm install --global npm@11.14.1
-      - run: npm ci
+      - run: npm install --global --ignore-scripts npm@11.14.1
+      - run: npm ci --ignore-scripts
       - run: npm audit --omit=dev --audit-level=high
-      - run: npx eslint apps/web/src
+      - run: npm run lint:web
       - run: npm run --workspace @task-management/web typecheck
       - run: npm run --workspace @task-management/web test
       - run: npm run --workspace @task-management/web build

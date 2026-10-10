@@ -6,8 +6,8 @@ WORKDIR /workspace
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
-RUN npm install --global npm@11.14.1 \
-  && npm ci --workspace @task-management/web --include-workspace-root
+RUN npm install --global --ignore-scripts npm@11.14.1 \
+  && npm ci --ignore-scripts --workspace @task-management/web --include-workspace-root
 
 FROM dependencies AS build
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
