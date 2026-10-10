@@ -8,7 +8,7 @@ Bài làm cho [đề bài tuyển dụng Intern](docs/01-requirements/assignment
 | ---------- | -------------------------------------------------------------------------------------------------------- |
 | Backend    | Node.js 24, Express, TypeScript strict, Prisma, PostgreSQL 17, Zod, Swagger UI                           |
 | Frontend   | Next.js 16 (App Router), React 19, TypeScript strict, Tailwind CSS 4, shadcn/ui, TanStack Query, dnd-kit |
-| Hạ tầng    | Docker Compose, GitHub Actions, SonarQube Cloud, Docker Hub, Dokploy, Cloudflare Tunnel, Vitest                           |
+| Hạ tầng    | Docker Compose, GitHub Actions, SonarQube Cloud, Docker Hub, Dokploy, Cloudflare Tunnel, Vitest          |
 
 **Bản demo:** https://task.darrenak.id.vn · **Swagger:** https://task-api.darrenak.id.vn/api/docs
 
@@ -73,11 +73,11 @@ Bản production chạy cả bốn dịch vụ (database, migration, API, web) b
 
 ## 3. Tài khoản
 
-| Loại        | Email                           | Mật khẩu                                                   | Workspace                           |
-| ----------- | ------------------------------- | ---------------------------------------------------------- | ----------------------------------- |
-| Demo (seed) | `anh@gmail.com`                 | `12345@Abc` trên bản demo; local theo `SEED_DEMO_PASSWORD` | AIM Studio (team Backend, Frontend) |
-| Demo (seed) | `khanh@gmail.com`               | như trên                                                   | Quán Cà Phê Sáng (team Vận hành)    |
-| Tự đăng ký  | trang **Đăng ký** (`/register`) | tự đặt, 8–128 ký tự                                        | chưa có, tự tạo                     |
+| Loại        | Email                           | Mật khẩu            | Workspace                           |
+| ----------- | ------------------------------- | ------------------- | ----------------------------------- |
+| Demo (seed) | `anh@gmail.com`                 | `12345@Abc`         | AIM Studio (team Backend, Frontend) |
+| Demo (seed) | `khanh@gmail.com`               | `12345@Abc`         | Quán Cà Phê Sáng (team Vận hành)    |
+| Tự đăng ký  | trang **Đăng ký** (`/register`) | tự đặt, 8–128 ký tự | chưa có, tự tạo                     |
 
 Hai tài khoản demo thuộc hai workspace tách biệt, dùng để kiểm tra việc cách ly dữ liệu.
 
@@ -114,14 +114,14 @@ Cột "Đề bài": A là bắt buộc, B là cộng điểm, "Thêm" là phần
 
 Ngoài phần bắt buộc và phần cộng điểm của đề bài, bài làm có thêm:
 
-| Nhóm | Đã làm |
-| --- | --- |
-| Sản phẩm | Workspace → team → task với ba vai trò; checklist và phụ thuộc giữa task; trang Việc của tôi; cập nhật tức thời qua Server-Sent Events; AI Planner có hỏi lại, bản nháp sửa được, lịch sử phiên bản; giao diện Việt / Anh; light và dark mode |
-| Bảo mật | Argon2id; phiên lưu phía server, thu hồi được; người ngoài workspace nhận 404 thay vì 403 để không lộ tài nguyên có tồn tại; Gemini key của từng người mã hoá bằng keyring có phiên bản; giới hạn lượt AI theo người, workspace và toàn hệ thống; container chạy bằng user thường, filesystem chỉ đọc, bỏ hết capability |
-| Chất lượng code | SonarQube Cloud phân tích tự động mỗi PR và nhánh `main` (Quality Gate); ESLint; TypeScript strict; `npm audit` trong CI; test tích hợp API chạy trên PostgreSQL thật; kiểu dữ liệu phía web sinh từ OpenAPI nên web và API không lệch hợp đồng |
-| Phát hành | Hai luồng CI riêng cho API và web; chỉ phát hành khi CI xanh trên `main` và từ chối commit đã cũ; image gắn tag `sha-<commit>` để rollback; migration là bước riêng chạy trước API; health check trả về commit đang chạy; seed demo bật tắt bằng biến môi trường |
-| Vận hành | Cloudflare Tunnel là lối vào duy nhất, cổng chỉ mở trên loopback; database không có cổng ra ngoài; runbook cho deploy, rollback, backup và restore |
-| Tài liệu | PRD, tài liệu kiến trúc, thiết kế AI + realtime, bảng đối chiếu từng yêu cầu với file code và test |
+| Nhóm            | Đã làm                                                                                                                                                                                                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sản phẩm        | Workspace → team → task với ba vai trò; checklist và phụ thuộc giữa task; trang Việc của tôi; cập nhật tức thời qua Server-Sent Events; AI Planner có hỏi lại, bản nháp sửa được, lịch sử phiên bản; giao diện Việt / Anh; light và dark mode                                                                            |
+| Bảo mật         | Argon2id; phiên lưu phía server, thu hồi được; người ngoài workspace nhận 404 thay vì 403 để không lộ tài nguyên có tồn tại; Gemini key của từng người mã hoá bằng keyring có phiên bản; giới hạn lượt AI theo người, workspace và toàn hệ thống; container chạy bằng user thường, filesystem chỉ đọc, bỏ hết capability |
+| Chất lượng code | SonarQube Cloud phân tích tự động mỗi PR và nhánh `main` (Quality Gate); ESLint; TypeScript strict; `npm audit` trong CI; test tích hợp API chạy trên PostgreSQL thật; kiểu dữ liệu phía web sinh từ OpenAPI nên web và API không lệch hợp đồng                                                                          |
+| Phát hành       | Hai luồng CI riêng cho API và web; chỉ phát hành khi CI xanh trên `main` và từ chối commit đã cũ; image gắn tag `sha-<commit>` để rollback; migration là bước riêng chạy trước API; health check trả về commit đang chạy; seed demo bật tắt bằng biến môi trường                                                         |
+| Vận hành        | Cloudflare Tunnel là lối vào duy nhất, cổng chỉ mở trên loopback; database không có cổng ra ngoài; runbook cho deploy, rollback, backup và restore                                                                                                                                                                       |
+| Tài liệu        | PRD, tài liệu kiến trúc, thiết kế AI + realtime, bảng đối chiếu từng yêu cầu với file code và test                                                                                                                                                                                                                       |
 
 ## 5. Hình ảnh minh hoạ
 
@@ -275,4 +275,8 @@ Tài liệu thiết kế: [PRD](docs/01-requirements/task-management-system-prd.
 
 ## 10. Video demo
 
-Sẽ bổ sung.
+Clip dài khoảng 90 giây, quay trên bản demo, có phụ đề cho từng cảnh: đăng nhập, dashboard, danh sách task (tìm kiếm, lọc, phân trang), Kanban kéo thả, chi tiết task, việc của tôi, thành viên, AI Planner và cài đặt AI.
+
+[![Xem video demo](images/demo/taskflow-demo-cover.png)](images/demo/taskflow-demo.mp4)
+
+Bấm vào ảnh để mở video, hoặc tải trực tiếp tệp [taskflow-demo.mp4](images/demo/taskflow-demo.mp4).
