@@ -24,8 +24,9 @@ Bài làm cho [đề bài tuyển dụng Intern](docs/01-requirements/assignment
 - [6. Phân quyền](#6-phân-quyền)
 - [7. Sơ đồ database](#7-sơ-đồ-database)
 - [8. Test và CI](#8-test-và-ci)
-- [9. Chưa làm và hạn chế](#9-chưa-làm-và-hạn-chế)
-- [10. Video demo](#10-video-demo)
+- [9. Triển khai hạ tầng](#9-triển-khai-hạ-tầng)
+- [10. Chưa làm và hạn chế](#10-chưa-làm-và-hạn-chế)
+- [11. Video demo](#11-video-demo)
 
 ![Dashboard của workspace AIM Studio](images/screenshots/dashboard.png)
 
@@ -229,7 +230,35 @@ Test API cần một PostgreSQL riêng cho test, xem [apps/api/README.md](apps/a
 
 Quy trình phát hành: nhánh tính năng → PR vào `dev` → PR vào `main` → `Backend CI` và `Web CI` → image lên Docker Hub → deploy trên Dokploy. Chi tiết vận hành, rollback, backup: [runbook](docs/03-operations/backend-operations-runbook.md).
 
-## 9. Chưa làm và hạn chế
+## 9. Triển khai hạ tầng
+
+Bản demo chạy trên một VPS, quản lý bằng Dokploy, và chỉ đi ra internet qua Cloudflare Tunnel.
+
+```text
+push lên main
+   └─ GitHub Actions: Backend CI, Web CI (audit, lint, typecheck, test, build)
+        └─ CI xanh → Backend Release, Web Release
+             └─ Docker Hub: 3 image (api, api-migrate, web), tag latest và sha-<commit>
+                  └─ Dokploy trên VPS: bấm Deploy → docker compose (docker-compose.prod.yml)
+                       db → migrate → seed (tuỳ chọn) → api → web
+                            └─ Cloudflare Tunnel → task.darrenak.id.vn, task-api.darrenak.id.vn
+```
+
+| Thành phần | Cách làm |
+| --- | --- |
+| Build và phát hành | Workflow release chỉ chạy khi CI xanh trên `main`, từ chối commit không còn là đầu nhánh, và đẩy image lên Docker Hub với hai tag `latest` và `sha-<commit>` |
+| Deploy | Thủ công: bấm **Deploy** trên Dokploy. Workflow không đụng tới server, nên server không cần mở SSH cho CI |
+| Thứ tự khởi động | `db` khoẻ → `migrate` chạy xong → `seed` (chỉ khi `SEED_DEMO_DATA=yes`) → `api` khoẻ → `web`. Migration lỗi thì API không khởi động |
+| Mạng | PostgreSQL nằm trong mạng nội bộ `backend`, không có cổng ra ngoài. API và web chỉ mở cổng trên `127.0.0.1` của VPS |
+| Lối vào | `cloudflared` chạy trên VPS, nối hai tên miền tới hai cổng loopback đó. VPS không mở cổng 80/443, không dùng Traefik |
+| Container | API và web chạy bằng user thường, filesystem chỉ đọc, bỏ hết Linux capability |
+| Cấu hình và secret | Đặt trong biến môi trường của Dokploy (mật khẩu database, `DATABASE_URL`, keyring mã hoá, tên image). Repo chỉ có `.env.example` |
+| Kiểm tra sau deploy | `GET /api/health/ready` trả về trạng thái và commit đang chạy trong header `X-Release-Sha` |
+| Rollback | Đổi biến tên image trên Dokploy sang tag `sha-<commit>` cũ rồi deploy lại. Web và API rollback độc lập |
+
+Các bước chi tiết, backup và restore database: [runbook](docs/03-operations/backend-operations-runbook.md).
+
+## 10. Chưa làm và hạn chế
 
 Chưa làm:
 
@@ -245,7 +274,7 @@ Hạn chế đã biết:
 
 Tài liệu thiết kế: [PRD](docs/01-requirements/task-management-system-prd.md), [kiến trúc](docs/02-architecture/system-architecture.md), [AI + realtime](docs/02-architecture/ai-and-realtime-technical-design.md), [đối chiếu yêu cầu với code và test](docs/01-requirements/prd-traceability.md).
 
-## 10. Video demo
+## 11. Video demo
 
 Clip dài khoảng 90 giây, quay trên bản demo, có phụ đề cho từng cảnh: đăng nhập, dashboard, danh sách task (tìm kiếm, lọc, phân trang), Kanban kéo thả, chi tiết task, việc của tôi, thành viên, AI Planner và cài đặt AI.
 
