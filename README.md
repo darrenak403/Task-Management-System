@@ -278,8 +278,8 @@ Tài liệu thiết kế: [PRD](docs/01-requirements/task-management-system-prd.
 
 Clip dài khoảng 90 giây, quay trên bản demo, có nhạc nền và phụ đề cho từng cảnh: đăng nhập, dashboard, danh sách task (tìm kiếm, lọc, phân trang), Kanban kéo thả, chi tiết task, việc của tôi, thành viên, AI Planner và cài đặt AI.
 
-[![Xem video demo](images/demo/taskflow-demo-cover.png)](images/demo/taskflow-demo.mp4)
+[![Video demo](images/demo/taskflow-demo.gif)](https://cdn.jsdelivr.net/gh/darrenak403/Task-Management-System@adae12833adf9943bbd2db1102a4ce6cdaa0f140/images/demo/taskflow-demo.mp4)
 
-Bấm vào ảnh để mở video, hoặc tải trực tiếp tệp [taskflow-demo.mp4](images/demo/taskflow-demo.mp4).
+Ảnh động ở trên tự chạy và không có tiếng. Bấm vào ảnh, hoặc mở [bản đầy đủ có nhạc nền](https://cdn.jsdelivr.net/gh/darrenak403/Task-Management-System@adae12833adf9943bbd2db1102a4ce6cdaa0f140/images/demo/taskflow-demo.mp4), để xem video ngay trên trình duyệt. Tệp gốc: [taskflow-demo.mp4](images/demo/taskflow-demo.mp4).
 
 Nhạc nền: "Carefree" của Kevin MacLeod ([incompetech.com](https://incompetech.com)), giấy phép [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
