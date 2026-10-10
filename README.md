@@ -282,4 +282,6 @@ Clip dài khoảng 90 giây, quay trên bản demo, có nhạc nền và phụ �
 
 Ảnh động ở trên tự chạy và không có tiếng. Bấm vào ảnh, hoặc mở [bản đầy đủ có nhạc nền](https://cdn.jsdelivr.net/gh/darrenak403/Task-Management-System@adae12833adf9943bbd2db1102a4ce6cdaa0f140/images/demo/taskflow-demo.mp4), để xem video ngay trên trình duyệt. Tệp gốc: [taskflow-demo.mp4](images/demo/taskflow-demo.mp4).
 
+Video cũng có trên Google Drive: [thư mục video demo](https://drive.google.com/drive/folders/1URDWfAJnmiPdhCDX-BmR_6GUY7G-GuWw?usp=sharing).
+
 Nhạc nền: "Carefree" của Kevin MacLeod ([incompetech.com](https://incompetech.com)), giấy phép [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
