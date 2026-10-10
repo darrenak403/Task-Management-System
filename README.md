@@ -201,47 +201,19 @@ Vai trò gắn với từng workspace; không có tài khoản quản trị toà
 
 Các bảng chính. 10 migration Prisma tạo bảng, khoá ngoại và ràng buộc; ví dụ người thực hiện phải thuộc team của task.
 
-```mermaid
-erDiagram
-    users ||--o{ sessions : "đăng nhập"
-    users ||--o{ workspace_members : "tham gia"
-    workspaces ||--o{ workspace_members : "có"
-    workspaces ||--o{ teams : "có"
-    teams ||--o{ team_members : "có"
-    workspace_members ||--o{ team_members : "được xếp vào"
-    teams ||--o{ tasks : "chứa"
-    users ||--o{ tasks : "tạo"
-    team_members |o--o{ tasks : "được giao"
-    tasks ||--o{ task_subtasks : "checklist"
-    tasks ||--o{ task_dependencies : "phụ thuộc"
-    users ||--o| user_gemini_credentials : "key AI"
-    teams ||--o{ ai_plans : "có"
-    ai_plans ||--o{ ai_plan_versions : "phiên bản"
-    ai_plans ||--o{ ai_jobs : "lần chạy"
-    ai_plans |o--o{ tasks : "tạo ra"
+![Sơ đồ ERD mức logic của database](images/erd/database-erd.png)
 
-    users {
-        uuid id PK
-        string email UK
-        string password_hash
-        string display_name
-    }
-    workspace_members {
-        uuid workspace_id FK
-        uuid user_id FK
-        enum role "OWNER, ADMIN, MEMBER"
-    }
-    tasks {
-        uuid id PK
-        uuid team_id FK
-        uuid created_by FK
-        uuid assignee_id FK
-        string title
-        enum status "TODO, IN_PROGRESS, DONE"
-        enum priority "LOW, MEDIUM, HIGH"
-        date due_date
-    }
-```
+Sơ đồ vẽ bằng draw.io theo ký hiệu crow's foot; tệp nguồn là [database-erd.drawio](images/erd/database-erd.drawio), mở và sửa được bằng draw.io.
+
+| Ký hiệu | Ý nghĩa |
+| --- | --- |
+| `PK`, `FK`, `UK` | Khoá chính, khoá ngoại, ràng buộc duy nhất. Cột khoá chính được gạch chân |
+| `NULL` (chữ xám) | Cột cho phép rỗng; các cột còn lại bắt buộc có giá trị |
+| Hai gạch đứng | Đúng một |
+| Vòng tròn và một gạch | Không hoặc một |
+| Vòng tròn và chân chim | Không hoặc nhiều |
+
+Sơ đồ gồm 14 bảng nghiệp vụ. Bảng `ai_jobs` chỉ liệt kê các cột chính, và năm bảng vận hành không có khoá ngoại (`realtime_clock`, `realtime_events`, `ai_usage_daily`, `ai_runtime_control`, `ai_quota_reconciliations`) không được vẽ.
 
 Toàn bộ schema: [apps/api/prisma/schema.prisma](apps/api/prisma/schema.prisma).
 
