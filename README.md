@@ -148,11 +148,15 @@ Mọi task được giao cho người đang đăng nhập, gộp từ các team 
 
 ![Biểu mẫu tạo kế hoạch AI](images/screenshots/ai-planner-goal.png)
 
-**Bước 2 — Trả lời câu hỏi làm rõ.** Khi mục tiêu còn thiếu thông tin, AI hỏi lại trước khi lập kế hoạch.
+**Bước 2 — AI xử lý.** Tiến trình hiện theo từng giai đoạn: tìm hiểu mục tiêu, chia nhỏ công việc, sắp xếp độ ưu tiên, lên lịch, hoàn thiện kế hoạch. Có thể rời trang rồi quay lại, yêu cầu vẫn chạy.
+
+![Tiến trình AI đang tạo kế hoạch](images/screenshots/ai-planner-progress.png)
+
+**Bước 3 — Trả lời câu hỏi làm rõ.** Khi mục tiêu còn thiếu thông tin, AI hỏi lại trước khi lập kế hoạch.
 
 ![Câu hỏi làm rõ của AI](images/screenshots/ai-planner-questions.png)
 
-**Bước 3 — Xem bản nháp và xác nhận.** Mỗi task có ưu tiên, ước lượng thời gian và task phải xong trước. Chọn, sửa rồi bấm xác nhận thì task mới được tạo trong team.
+**Bước 4 — Xem bản nháp và xác nhận.** Mỗi task có ưu tiên, ước lượng thời gian và task phải xong trước. Chọn, sửa rồi bấm xác nhận thì task mới được tạo trong team.
 
 ![Bản nháp kế hoạch do AI đề xuất](images/screenshots/ai-planner-draft.png)
 
