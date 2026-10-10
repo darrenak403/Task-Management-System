@@ -7,7 +7,7 @@ FROM base AS dependencies
 WORKDIR /workspace
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
-RUN npm install --global npm@11.14.1 && npm ci
+RUN npm install --global --ignore-scripts npm@11.14.1 && npm ci --ignore-scripts
 
 FROM dependencies AS migrate
 ENV NODE_ENV=production
